@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #3a66db;
+  --brand-dark: #14141a;
+  --surface-muted: #f6f7fb;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: #1d1d26;
+  background-color: var(--surface-muted);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Manrope", system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Consistent, visible keyboard focus everywhere — no focus traps removed */
+:focus-visible {
+  outline: 2px solid #3a66db;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Quieter scrollbars that still work the same as native */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d8dae3;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b9bcca;
+  background-clip: content-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

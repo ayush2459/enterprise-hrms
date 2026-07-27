@@ -1,0 +1,89 @@
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth.dependencies import get_current_user
+from app.auth.rbac import require_roles
+from app.db.session import get_db
+from app.models.enums import RoleEnum
+from app.models.user import User
+from app.repositories.employee_repository import EmployeeRepository
+from app.schemas.employee import (
+    EmployeeCreateRequest,
+    EmployeeCreateResponse,
+    EmployeeReadFull,
+    EmployeeReadPublic,
+    EmployeeStats,
+    EmployeeUpdate,
+)
+from app.services.employee_service import EmployeeService
+
+router = APIRouter(prefix="/employees", tags=["employees"])
+
+
+@router.get("", response_model=list[EmployeeReadPublic])
+async def list_employees(
+    skip: int = 0,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Directory view — every authenticated role can see the public fields."""
+    return await EmployeeService(db).list_directory(skip, limit)
+
+
+@router.get("/stats/summary", response_model=EmployeeStats)
+async def get_employee_stats(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Dashboard KPI numbers. Registered before /{employee_id} so it
+    doesn't get swallowed by the dynamic route."""
+    return await EmployeeService(db).get_stats()
+
+
+@router.post(
+    "",
+    response_model=EmployeeCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_roles(RoleEnum.HR_ADMIN, RoleEnum.HR_EXECUTIVE, RoleEnum.SYSTEM_ADMIN))],
+)
+async def create_employee(
+    payload: EmployeeCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await EmployeeService(db).create_employee(payload, current_user)
+    await db.commit()
+    return result
+
+
+@router.get("/{employee_id}", response_model=EmployeeReadFull | EmployeeReadPublic)
+async def get_employee(
+    employee_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    employee = await EmployeeRepository(db).get_by_id(employee_id)
+    if employee is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+    result = await EmployeeService(db).get_visible_profile(employee, current_user)
+    await db.commit()
+    return result
+
+
+@router.patch("/{employee_id}", response_model=EmployeeReadFull)
+async def update_employee(
+    employee_id: UUID,
+    payload: EmployeeUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    employee = await EmployeeRepository(db).get_by_id(employee_id)
+    if employee is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+
+    updated = await EmployeeService(db).update_employee(employee, payload, current_user)
+    await db.commit()
+    return updated
