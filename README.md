@@ -1,104 +1,464 @@
-# Enterprise HR Portal (HRHub)
+# 🚀 HRHub – Enterprise Human Resource Management System (HRMS)
 
-A full-stack enterprise HRMS: Next.js frontend, FastAPI backend, PostgreSQL,
-Redis, and an nginx reverse proxy — built per the Enterprise HR Portal
-specification (see `docs/`).
+<p align="center">
 
-This is the Sprint 1 foundation: authentication + RBAC, the employee master
-profile (CRUD), and the base dashboard shell/navigation. Later sprints
-(documents/BGV, insurance, policies, reporting, hardening) build on top of
-this scaffold — see the Delivery Roadmap in the spec.
+![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-## Stack
+</p>
 
-| Layer       | Choice                                             |
-|-------------|-----------------------------------------------------|
-| Frontend    | Next.js 15 (App Router), TypeScript, Tailwind CSS   |
-| Backend     | FastAPI (Python), async SQLAlchemy 2.0              |
-| Database    | PostgreSQL 16                                        |
-| Cache/Store | Redis 7                                              |
-| Auth        | JWT (access + refresh), bcrypt, TOTP-based MFA       |
-| Proxy       | nginx                                                |
-| Deployment  | Docker Compose                                       |
+> **HRHub** is a modern, enterprise-grade Human Resource Management System (HRMS) built using **Next.js**, **FastAPI**, **PostgreSQL**, **Redis**, and **Docker**.  
+> It provides secure employee management, enterprise authentication, role-based access control, HR workflows, and a scalable architecture suitable for organizations of all sizes.
 
-## Quick Start
+---
 
-**Prerequisites:** Docker & Docker Compose.
+# 📖 Overview
 
-```bash
-git clone <this-repo>
-cd enterprise-hrms
-./scripts/setup.sh
-```
+HRHub is designed following enterprise software architecture and industry best practices.
 
-This copies `backend/.env.example` to `backend/.env`, builds every
-container, runs Alembic migrations, and starts the stack.
+The project focuses on:
 
-Then create the first System Admin:
+- Secure Authentication & Authorization
+- Employee Information Management
+- HR Administration
+- Enterprise Dashboard
+- Modular Architecture
+- High Performance APIs
+- Production Deployment Support
 
-```bash
-docker compose exec backend python scripts/create_admin.py \
-  --email admin@yourcompany.com --password "ChangeMe123!"
-```
+This repository currently contains the **Sprint 1 Foundation**, establishing the core platform that future HR modules will build upon.
 
-- Frontend: http://localhost:3000
-- Backend API docs: http://localhost:8000/docs
-- Through nginx: http://localhost
+---
 
-**⚠️ Before any non-local deployment:** change `SECRET_KEY` and
-`POSTGRES_PASSWORD` in `backend/.env` — the example values are placeholders,
-not defaults you should ship with.
+# ✨ Key Features
 
-## Local development (without Docker)
+## 🔐 Enterprise Authentication
 
-**Backend**
-```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env   # edit DATABASE_URL to point at a local Postgres
-alembic upgrade head
-uvicorn app.main:app --reload
-```
+- Login using Official Email or Employee ID
+- JWT Authentication
+- Refresh Token Authentication
+- Password Hashing (bcrypt)
+- Account Lockout Protection
+- Multi-Factor Authentication (TOTP)
+- Secure Session Management
 
-**Frontend**
-```bash
-cd frontend
-npm install
-npm run dev
-```
+---
 
-## Project Structure
+## 👥 Employee Management
+
+- Complete Employee Master Profile
+- Create Employee
+- View Employee
+- Update Employee
+- Delete Employee
+- Employee Directory
+- Search & Filtering
+- Department Assignment
+- Reporting Manager Mapping
+
+---
+
+## 🛡 Role Based Access Control (RBAC)
+
+Multiple access levels are supported.
+
+- System Administrator
+- HR Administrator
+- HR Executive
+- Department Manager
+- Employee
+
+Every request is validated server-side to prevent privilege escalation.
+
+---
+
+## 📊 Dashboard
+
+Modern enterprise dashboard including:
+
+- Responsive Sidebar
+- Navigation Layout
+- Dashboard Widgets
+- Employee Statistics
+- Quick Actions
+- User Profile
+- Recent Activity
+
+---
+
+## 📋 Audit & Security
+
+Enterprise security features include:
+
+- Login Audit Logs
+- Sensitive Data Access Logs
+- Failed Login Tracking
+- Account Locking
+- Secure Password Storage
+- JWT Token Rotation
+- Permission Validation
+
+---
+
+## 🏗 Enterprise Architecture
+
+- Modular Backend
+- RESTful APIs
+- Async Database Operations
+- Layered Service Architecture
+- Repository Pattern
+- Environment Configuration
+- Dockerized Deployment
+
+---
+
+# 🏛 Technology Stack
+
+| Layer | Technology |
+|---------|------------|
+| Frontend | Next.js 15 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS |
+| Backend | FastAPI |
+| ORM | SQLAlchemy 2.0 (Async) |
+| Database | PostgreSQL 16 |
+| Cache | Redis 7 |
+| Authentication | JWT + Refresh Tokens |
+| Password Hashing | bcrypt |
+| MFA | TOTP |
+| Reverse Proxy | nginx |
+| Containerization | Docker Compose |
+| Database Migration | Alembic |
+
+---
+
+# 📂 Project Structure
 
 ```
 enterprise-hrms/
-├── frontend/     # Next.js app (App Router, TS, Tailwind)
-├── backend/      # FastAPI app (async SQLAlchemy, Alembic, JWT auth)
-├── database/     # init.sql — extensions only; schema is Alembic-owned
-├── docker/       # nginx reverse proxy config, postgres overrides
-├── docs/         # specification documents
-├── scripts/      # setup + admin bootstrap scripts
-└── docker-compose.yml
+│
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── hooks/
+│   ├── lib/
+│   └── public/
+│
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   ├── core/
+│   │   ├── db/
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   ├── repositories/
+│   │   └── utils/
+│   │
+│   ├── alembic/
+│   ├── scripts/
+│   └── requirements.txt
+│
+├── database/
+│
+├── docker/
+│
+├── docs/
+│
+├── scripts/
+│
+├── docker-compose.yml
+│
+└── README.md
 ```
 
-## What's implemented (Sprint 1)
+---
 
-- Official email / Employee ID login, bcrypt password hashing
-- JWT access (15 min) + refresh (7 day) tokens, role claim embedded
-- Server-side RBAC re-validated on every request (not just at login)
-- Account lockout after 5 failed attempts, MFA (TOTP) for HR/System Admin
-- Full audit log of login attempts and sensitive-field access
-- Employee master profile: CRUD with field-level visibility rules
-  (sensitive fields only visible to HR Admin/Executive or the employee)
-- Dashboard shell, sidebar navigation, employee directory table
+# 🚀 Quick Start
 
-## What's next
+## Prerequisites
 
-See Section 9 (Suggested Delivery Roadmap) in the spec: documents/BGV
-pipeline, insurance module, HR policies library, reporting, and the
-hardening sprint (field-level encryption, DPDP compliance review, load
-testing).
+- Docker
+- Docker Compose
 
-## License
+Clone the repository
 
-See [LICENSE](./LICENSE).
+```bash
+git clone https://github.com/yourusername/enterprise-hrms.git
+
+cd enterprise-hrms
+```
+
+Run the setup script
+
+```bash
+./scripts/setup.sh
+```
+
+The setup script automatically:
+
+- Creates environment files
+- Builds Docker containers
+- Starts PostgreSQL
+- Starts Redis
+- Runs Alembic migrations
+- Starts Backend
+- Starts Frontend
+- Starts Nginx
+
+---
+
+# 👨‍💻 Create First System Administrator
+
+```bash
+docker compose exec backend python scripts/create_admin.py \
+--email admin@yourcompany.com \
+--password "ChangeMe123!"
+```
+
+---
+
+# 🌐 Application URLs
+
+| Service | URL |
+|----------|-----|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8000 |
+| Swagger Docs | http://localhost:8000/docs |
+| ReDoc | http://localhost:8000/redoc |
+| Nginx Gateway | http://localhost |
+
+---
+
+# ⚙ Local Development
+
+## Backend
+
+```bash
+cd backend
+
+python -m venv .venv
+
+source .venv/bin/activate
+
+pip install -r requirements.txt
+
+cp .env.example .env
+
+alembic upgrade head
+
+uvicorn app.main:app --reload
+```
+
+---
+
+## Frontend
+
+```bash
+cd frontend
+
+npm install
+
+npm run dev
+```
+
+---
+
+# 🔒 Environment Variables
+
+Before deploying to production, configure:
+
+```
+SECRET_KEY
+
+POSTGRES_PASSWORD
+
+DATABASE_URL
+
+REDIS_URL
+
+JWT_SECRET
+
+JWT_REFRESH_SECRET
+
+SMTP_CONFIGURATION
+
+CORS_ALLOWED_ORIGINS
+
+MFA_CONFIGURATION
+```
+
+> **Never deploy using the example environment variables.**
+
+---
+
+# ✅ Sprint 1 Deliverables
+
+### Authentication
+
+- JWT Authentication
+- Refresh Tokens
+- MFA
+- Password Encryption
+- Login Lockout
+- Audit Logging
+
+### RBAC
+
+- Role Management
+- Permission Validation
+- Protected APIs
+
+### Employee Module
+
+- Employee CRUD
+- Employee Directory
+- Profile Management
+- Department Mapping
+
+### Dashboard
+
+- Navigation Shell
+- Sidebar
+- Dashboard Layout
+- Employee Overview
+
+---
+
+# 🗺 Product Roadmap
+
+## Sprint 2
+
+- Document Management
+- Background Verification
+- Document Upload
+- Digital Verification
+
+---
+
+## Sprint 3
+
+- Employee Insurance
+- Claims
+- Benefits
+- Health Plans
+
+---
+
+## Sprint 4
+
+- HR Policies
+- Leave Policies
+- Organization Handbook
+- Company Notices
+
+---
+
+## Sprint 5
+
+- Reports
+- Analytics
+- Employee Insights
+- Dashboard Charts
+
+---
+
+## Sprint 6
+
+- Field-Level Encryption
+- DPDP Compliance
+- Security Hardening
+- Performance Optimization
+- Load Testing
+- Production Readiness
+
+---
+
+# 🔐 Security Features
+
+- JWT Authentication
+- Refresh Token Rotation
+- Password Hashing
+- Role Based Authorization
+- Multi-Factor Authentication
+- Login Attempt Tracking
+- Audit Logging
+- Secure Cookies
+- SQL Injection Protection
+- XSS Protection
+- CSRF Ready Architecture
+
+---
+
+# 📈 Future Enhancements
+
+- Payroll Management
+- Attendance System
+- Leave Management
+- Recruitment Portal
+- Performance Reviews
+- Employee Self-Service Portal
+- Asset Management
+- Training Management
+- Notification Service
+- Email Automation
+- Mobile Application
+- AI HR Assistant
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome!
+
+1. Fork the repository
+
+2. Create a feature branch
+
+```bash
+git checkout -b feature/new-feature
+```
+
+3. Commit changes
+
+```bash
+git commit -m "Add new feature"
+```
+
+4. Push
+
+```bash
+git push origin feature/new-feature
+```
+
+5. Open a Pull Request
+
+---
+
+# 📜 License
+
+This project is licensed under the MIT License.
+
+See the **LICENSE** file for more information.
+
+---
+
+# 👨‍💻 Author
+
+**Ayush Gupta**
+
+Enterprise HR Portal (HRHub)
+
+Built using **Next.js**, **FastAPI**, **PostgreSQL**, **Redis**, and **Docker** following enterprise software architecture and modern security standards.
+
+---
+
+<p align="center">
+
+⭐ If you found this project helpful, consider giving it a star!
+
+</p>
