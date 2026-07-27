@@ -468,7 +468,7 @@ Built using **Next.js**, **FastAPI**, **PostgreSQL**, **Redis**, and **Docker** 
 
 HRHub is a complete Enterprise Human Resource Management System that manages the entire employee lifecycle—from recruitment to exit—through secure, scalable, and modular architecture.
 
-```
+
 HR PORTAL
 │
 ├── 🔐 Authentication
@@ -566,7 +566,6 @@ HR PORTAL
     ├── Security Settings
     ├── Audit Logs
     └── Backup & Restore
-```
 
 ---
 
