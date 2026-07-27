@@ -464,129 +464,176 @@ Built using **Next.js**, **FastAPI**, **PostgreSQL**, **Redis**, and **Docker** 
 </p>
 ---
 
-# 🏢 HRHub Modules & Features
+## 🏢 HRHub Modules & Features
 
-HRHub is a complete Enterprise Human Resource Management System that manages the entire employee lifecycle—from recruitment to exit—through secure, scalable, and modular architecture.
-
-
-HR PORTAL
-│
-├── 🔐 Authentication
-│   ├── Login
-│   ├── JWT Authentication
-│   ├── Role-Based Access Control (Admin, HR, Manager, Employee)
-│   ├── Forgot Password
-│   ├── OTP Verification
-│   └── Session Management
-│
-├── 📊 Dashboard
-│   ├── Total Employees
-│   ├── New Joinees
-│   ├── Attendance Summary
-│   ├── Leave Requests
-│   ├── Upcoming Birthdays
-│   ├── Payroll Status
-│   ├── Notifications
-│   └── Quick Actions
-│
-├── 👥 Employee Management
-│   ├── Personal Details
-│   ├── Employment Details
-│   ├── Emergency Contacts
-│   ├── Recruitment Details
-│   ├── Background Verification
-│   ├── Documents
-│   ├── Skills & Certifications
-│   └── Exit Information
-│
-├── ⏰ Attendance
-│   ├── Daily Attendance
-│   ├── Check-In / Check-Out
-│   ├── Shift Management
-│   ├── Overtime
-│   └── Attendance Reports
-│
-├── 🌴 Leave Management
-│   ├── Apply Leave
-│   ├── Leave Balance
-│   ├── Approval Workflow
-│   ├── Holiday Calendar
-│   └── Leave History
-│
-├── 💰 Payroll
-│   ├── Salary Structure
-│   ├── Payslips
-│   ├── Tax Details
-│   ├── Bonuses
-│   └── Deductions
-│
-├── 🏥 Insurance & Benefits
-│   ├── Health Insurance
-│   ├── Provident Fund (PF)
-│   ├── Employee State Insurance (ESI)
-│   ├── Gratuity
-│   └── Other Benefits
-│
-├── 🏢 Team Structure
-│   ├── Departments
-│   ├── Designations
-│   ├── Reporting Manager
-│   └── Organization Chart
-│
-├── 📚 HR Policies
-│   ├── Company Policies
-│   ├── Employee Handbook
-│   ├── Compliance Documents
-│   └── Downloads
-│
-├── 📅 Employee Timeline
-│   ├── Promotions
-│   ├── Transfers
-│   ├── Salary Revisions
-│   ├── Awards
-│   └── Activity Log
-│
-├── 📈 Reports & Analytics
-│   ├── Employee Analytics
-│   ├── Attrition Rate
-│   ├── Hiring Reports
-│   ├── Attendance Analytics
-│   ├── Payroll Reports
-│   └── Custom Reports
-│
-├── 🔔 Notifications
-│   ├── Email Alerts
-│   ├── System Notifications
-│   ├── Announcements
-│   └── Reminder System
-│
-└── ⚙️ Settings
-    ├── User Management
-    ├── Roles & Permissions
-    ├── Security Settings
-    ├── Audit Logs
-    └── Backup & Restore
+HRHub is a complete **Enterprise Human Resource Management System (HRMS)** that manages the entire employee lifecycle—from recruitment to exit—through a secure, scalable, and modular architecture.
 
 ---
 
-# ✨ Enterprise Highlights
+<details open>
+<summary><strong>🔐 Authentication & Security</strong></summary>
 
-- 🔐 Enterprise-grade Authentication with JWT & OTP
-- 👥 Role-Based Access Control (RBAC)
-- 🛡 Secure Session Management
+- Login with Official Email / Employee ID
+- JWT Authentication
+- Role-Based Access Control (Admin, HR, Manager, Employee)
+- Forgot Password
+- OTP Verification
+- Session Management
+
+</details>
+
+<details open>
+<summary><strong>📊 Dashboard</strong></summary>
+
+- Total Employees
+- New Joinees
+- Attendance Summary
+- Leave Requests
+- Upcoming Birthdays
+- Payroll Status
+- Notifications
+- Quick Actions
+
+</details>
+
+<details open>
+<summary><strong>👥 Employee Management</strong></summary>
+
+- Personal Details
+- Employment Details
+- Emergency Contacts
+- Recruitment Details
+- Background Verification
+- Employee Documents
+- Skills & Certifications
+- Exit Information
+
+</details>
+
+<details open>
+<summary><strong>⏰ Attendance</strong></summary>
+
+- Daily Attendance
+- Check-In / Check-Out
+- Shift Management
+- Overtime Tracking
+- Attendance Reports
+
+</details>
+
+<details open>
+<summary><strong>🌴 Leave Management</strong></summary>
+
+- Apply Leave
+- Leave Balance
+- Approval Workflow
+- Holiday Calendar
+- Leave History
+
+</details>
+
+<details open>
+<summary><strong>💰 Payroll</strong></summary>
+
+- Salary Structure
+- Payslips
+- Tax Details
+- Bonuses
+- Deductions
+
+</details>
+
+<details open>
+<summary><strong>🏥 Insurance & Benefits</strong></summary>
+
+- Health Insurance
+- Provident Fund (PF)
+- Employee State Insurance (ESI)
+- Gratuity
+- Additional Employee Benefits
+
+</details>
+
+<details open>
+<summary><strong>🏢 Organization Structure</strong></summary>
+
+- Departments
+- Designations
+- Reporting Managers
+- Organization Chart
+
+</details>
+
+<details open>
+<summary><strong>📚 HR Policies</strong></summary>
+
+- Company Policies
+- Employee Handbook
+- Compliance Documents
+- Downloads
+
+</details>
+
+<details open>
+<summary><strong>📅 Employee Timeline</strong></summary>
+
+- Promotions
+- Transfers
+- Salary Revisions
+- Awards & Recognition
+- Activity Logs
+
+</details>
+
+<details open>
+<summary><strong>📈 Reports & Analytics</strong></summary>
+
+- Employee Analytics
+- Attrition Reports
+- Hiring Reports
+- Attendance Analytics
+- Payroll Reports
+- Custom Reports
+
+</details>
+
+<details open>
+<summary><strong>🔔 Notifications</strong></summary>
+
+- Email Alerts
+- System Notifications
+- Company Announcements
+- Reminder System
+
+</details>
+
+<details open>
+<summary><strong>⚙️ Administration & Settings</strong></summary>
+
+- User Management
+- Roles & Permissions
+- Security Settings
+- Audit Logs
+- Backup & Restore
+
+</details>
+
+---
+
+### ✨ Enterprise Highlights
+
+- 🔐 Secure JWT Authentication & OTP Verification
+- 👥 Enterprise Role-Based Access Control (RBAC)
+- 🛡️ Multi-layer Security & Audit Logging
 - 📂 Complete Employee Lifecycle Management
-- 📄 Document & Background Verification
+- 📄 Background Verification & Document Management
 - ⏰ Attendance & Shift Tracking
-- 🌴 Leave Management with Approval Workflow
-- 💰 Payroll & Tax Management
-- 🏥 Insurance & Employee Benefits
-- 📈 Advanced Reports & Analytics
-- 📚 HR Policies & Compliance Management
-- 🔔 Email & System Notifications
-- 📊 Interactive Dashboard
-- 📝 Comprehensive Audit Logs
-- 🐳 Dockerized Deployment with Nginx Reverse Proxy
+- 🌴 Leave & Holiday Management
+- 💰 Payroll & Benefits Administration
+- 🏥 Insurance & Employee Welfare
+- 📊 Interactive Dashboards & Analytics
+- 📚 HR Policies & Compliance
+- 🔔 Smart Notification System
+- 🐳 Dockerized Deployment with Nginx
 - ⚡ FastAPI Async Backend with PostgreSQL & Redis
-- 🎨 Modern Responsive UI built using Next.js 15 & Tailwind CSS
-
----
+- 🎨 Modern Next.js 15 + Tailwind CSS Frontend
