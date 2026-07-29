@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Enum, ForeignKey, String
+from sqlalchemy import Enum, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -17,6 +17,11 @@ class Candidate(Base, UUIDPkMixin, TimestampMixin):
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+
+    # Notice period (in days) the candidate must serve at their current
+    # employer before they can join — carried over to the Employee record
+    # on conversion so onboarding/joining-date planning has it.
+    notice_period_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     resume_file_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     resume_file_path: Mapped[str | None] = mapped_column(String(512), nullable=True)

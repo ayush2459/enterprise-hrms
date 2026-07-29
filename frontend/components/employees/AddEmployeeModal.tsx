@@ -20,6 +20,7 @@ const EMPTY_FORM: EmployeeCreateInput = {
   designation: "",
   employment_type: "full_time",
   date_of_joining: "",
+  notice_period_days: undefined,
 };
 
 export function AddEmployeeModal({ onClose, onCreated }: AddEmployeeModalProps) {
@@ -32,6 +33,11 @@ export function AddEmployeeModal({ onClose, onCreated }: AddEmployeeModalProps) 
   const update = (field: keyof EmployeeCreateInput) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const updateNoticePeriod = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setForm((f) => ({ ...f, notice_period_days: val === "" ? undefined : Number(val) }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,6 +157,14 @@ export function AddEmployeeModal({ onClose, onCreated }: AddEmployeeModalProps) 
                 <option value="contract">Contract</option>
               </select>
             </div>
+            <Input
+              id="notice_period_days"
+              label="Notice Period (days, optional)"
+              type="number"
+              min="0"
+              value={form.notice_period_days ?? ""}
+              onChange={updateNoticePeriod}
+            />
             <Input
               id="date_of_joining"
               label="Date of Joining"

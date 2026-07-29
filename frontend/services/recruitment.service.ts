@@ -39,12 +39,14 @@ export const recruitmentService = {
     fullName: string,
     email: string,
     phone: string,
+    noticePeriodDays: number | null,
     resume: File | null
   ) {
     const form = new FormData();
     form.append("full_name", fullName);
     form.append("email", email);
     if (phone) form.append("phone", phone);
+    if (noticePeriodDays !== null) form.append("notice_period_days", String(noticePeriodDays));
     if (resume) form.append("resume", resume);
     const { data } = await api.post<Candidate>(
       `/recruitment/openings/${openingId}/candidates`,

@@ -18,6 +18,7 @@ export function AddCandidateModal({
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [noticePeriodDays, setNoticePeriodDays] = useState("");
   const [resume, setResume] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +28,14 @@ export function AddCandidateModal({
     setError(null);
     setLoading(true);
     try {
-      await recruitmentService.addCandidate(openingId, fullName, email, phone, resume);
+      await recruitmentService.addCandidate(
+        openingId,
+        fullName,
+        email,
+        phone,
+        noticePeriodDays === "" ? null : Number(noticePeriodDays),
+        resume
+      );
       onAdded();
       onClose();
     } catch (err: any) {
@@ -50,6 +58,14 @@ export function AddCandidateModal({
           <Input id="full_name" label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
           <Input id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <Input id="phone" label="Phone (optional)" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Input
+            id="notice_period_days"
+            label="Notice Period at Current Job (days, optional)"
+            type="number"
+            min="0"
+            value={noticePeriodDays}
+            onChange={(e) => setNoticePeriodDays(e.target.value)}
+          />
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-brand-dark">Resume (optional)</label>
             <input

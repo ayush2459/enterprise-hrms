@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Edit2, Plus, User as UserIcon } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { Loader } from "@/components/common/Loader";
 import { EditPersonalDetailsModal } from "@/components/employees/EditPersonalDetailsModal";
 import { AddDependentModal } from "@/components/insurance/AddDependentModal";
@@ -98,9 +99,37 @@ export default function EmployeeProfilePage() {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [bgvChecks, setBgvChecks] = useState<BGVCheck[]>([]);
   const [loading, setLoading] = useState(true);
+  const [conversionActionLoading, setConversionActionLoading] = useState(false);
+  const [conversionError, setConversionError] = useState<string | null>(null);
 
   const reloadEmployee = () => {
     employeeService.getById(employeeId).then(setEmployee);
+  };
+
+  const handleRequestConversion = async () => {
+    setConversionError(null);
+    setConversionActionLoading(true);
+    try {
+      const updated = await employeeService.requestConversion(employeeId);
+      setEmployee(updated);
+    } catch (err: any) {
+      setConversionError(err?.response?.data?.detail ?? "Could not submit conversion request.");
+    } finally {
+      setConversionActionLoading(false);
+    }
+  };
+
+  const handleDecideConversion = async (approve: boolean) => {
+    setConversionError(null);
+    setConversionActionLoading(true);
+    try {
+      const updated = await employeeService.decideConversion(employeeId, approve);
+      setEmployee(updated);
+    } catch (err: any) {
+      setConversionError(err?.response?.data?.detail ?? "Could not record this decision.");
+    } finally {
+      setConversionActionLoading(false);
+    }
   };
 
   const reloadInsurance = () => {
@@ -203,7 +232,62 @@ export default function EmployeeProfilePage() {
                 value={employee.date_of_joining ? new Date(employee.date_of_joining).toLocaleDateString() : null}
               />
               <Field label="Reporting Manager" value={org?.manager?.full_name ?? "—"} />
+              <Field
+                label="Notice Period"
+                value={employee.notice_period_days != null ? `${employee.notice_period_days} days` : null}
+              />
             </div>
+
+            {employee.employment_type === "intern" && (
+              <div className="mt-4 border-t border-gray-100 pt-4">
+                {employee.conversion_status === "pending" ? (
+                  <div className="space-y-2">
+                    <span className="inline-block rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-600">
+                      Conversion to Full-Time — Pending Approval
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleDecideConversion(true)}
+                        disabled={conversionActionLoading}
+                        className="text-xs px-3 py-1.5"
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleDecideConversion(false)}
+                        disabled={conversionActionLoading}
+                        className="text-xs px-3 py-1.5"
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      Approval by the reporting manager, HR Admin, HR Executive, or System Admin
+                      converts this intern to a full-time employee immediately.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {employee.conversion_status === "rejected" && (
+                      <span className="inline-block rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-600">
+                        Previous Conversion Request Rejected
+                      </span>
+                    )}
+                    <div>
+                      <Button
+                        onClick={handleRequestConversion}
+                        disabled={conversionActionLoading}
+                        className="text-xs px-3 py-1.5"
+                      >
+                        {conversionActionLoading ? "Submitting..." : "Request Conversion to Full-Time"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {conversionError && <p className="mt-2 text-xs text-red-500">{conversionError}</p>}
+              </div>
+            )}
           </SectionCard>
 
           {/* Personal Details */}
