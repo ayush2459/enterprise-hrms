@@ -23,6 +23,8 @@ export interface EmployeePublic {
   date_of_joining: string | null;
   photo_url: string | null;
   status: "active" | "on_leave" | "offboarded";
+  notice_period_days: number | null;
+  conversion_status: "not_applicable" | "pending" | "approved" | "rejected";
 }
 
 export interface EmployeeFull extends EmployeePublic {
@@ -42,6 +44,7 @@ export interface EmployeeCreateInput {
   designation?: string;
   employment_type: "full_time" | "intern" | "contract";
   date_of_joining?: string;
+  notice_period_days?: number;
 }
 
 export interface EmployeeCreateResult {
@@ -163,6 +166,7 @@ export interface Candidate {
   full_name: string;
   email: string;
   phone: string | null;
+  notice_period_days: number | null;
   resume_file_name: string | null;
   stage: CandidateStage;
   notes: string | null;

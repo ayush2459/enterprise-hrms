@@ -45,6 +45,17 @@ class EmployeeStatus(str, enum.Enum):
     OFFBOARDED = "offboarded"
 
 
+class ConversionStatus(str, enum.Enum):
+    """Tracks an intern's request to convert to a full-time employee.
+    NOT_APPLICABLE covers everyone who isn't mid-conversion (full-time/
+    contract staff, or an intern who hasn't requested yet)."""
+
+    NOT_APPLICABLE = "not_applicable"
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
 class JobOpeningStatus(str, enum.Enum):
     OPEN = "open"
     ON_HOLD = "on_hold"

@@ -7,12 +7,12 @@ filtering happens in app/schemas + app/services, not here.
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, Enum, ForeignKey, String
+from sqlalchemy import Date, Enum, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPkMixin
-from app.models.enums import EmployeeStatus, EmploymentType, SelectionStatus
+from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, SelectionStatus
 
 
 class Employee(Base, UUIDPkMixin, TimestampMixin):
@@ -31,6 +31,14 @@ class Employee(Base, UUIDPkMixin, TimestampMixin):
         Enum(EmploymentType, name="employment_type_enum"), default=EmploymentType.FULL_TIME
     )
     date_of_joining: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    # Notice period, in days — relevant for interns/contractors whose term
+    # is time-bound. An intern serving out their notice period can request
+    # conversion to full-time; conversion_status tracks that request.
+    notice_period_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    conversion_status: Mapped[ConversionStatus] = mapped_column(
+        Enum(ConversionStatus, name="conversion_status_enum"), default=ConversionStatus.NOT_APPLICABLE
+    )
 
     # ---- Sensitive / access-restricted fields (Section 3, Section 6) ----
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)

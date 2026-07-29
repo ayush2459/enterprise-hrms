@@ -71,6 +71,7 @@ class RecruitmentService:
         full_name: str,
         email: str,
         phone: str | None,
+        notice_period_days: int | None,
         resume: UploadFile | None,
         requester: User,
     ) -> Candidate:
@@ -91,6 +92,7 @@ class RecruitmentService:
             full_name=full_name,
             email=email,
             phone=phone,
+            notice_period_days=notice_period_days,
             resume_file_name=resume_name,
             resume_file_path=resume_path,
             resume_mime_type=resume_mime,
@@ -135,6 +137,7 @@ class RecruitmentService:
             department=opening.department if opening else None,
             designation=opening.title if opening else None,
             employment_type=EmploymentType.FULL_TIME,
+            notice_period_days=candidate.notice_period_days,
         )
         result = await EmployeeService(self.db).create_employee(payload, requester)
 

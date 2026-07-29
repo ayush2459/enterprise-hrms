@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
 from app.models.employee import Employee
-from app.models.enums import RoleEnum
+from app.models.enums import ConversionStatus, EmploymentType, RoleEnum
 from app.models.user import User
 from app.repositories.employee_repository import EmployeeRepository
 from app.repositories.user_repository import UserRepository
@@ -93,6 +93,7 @@ class EmployeeService:
             employment_type=payload.employment_type,
             date_of_joining=payload.date_of_joining,
             reporting_manager_id=payload.reporting_manager_id,
+            notice_period_days=payload.notice_period_days,
         )
         await self.repo.create(employee)
 
@@ -125,4 +126,77 @@ class EmployeeService:
 
         await self.repo.save(employee)
         await self.audit.log(requester.id, "employee_update", "employee", str(employee.id))
+        return employee
+
+    async def request_conversion(self, employee: Employee, requester: User) -> Employee:
+        """An intern (or HR, on their behalf) asks to be converted to a
+        full-time employee. Puts the request in front of the reporting
+        manager / HR for a decision — see decide_conversion below."""
+        if employee.employment_type != EmploymentType.INTERN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only interns can request conversion to full-time.",
+            )
+
+        is_self = employee.user_id == requester.id
+        is_privileged = requester.role in FULL_ACCESS_ROLES
+        if not (is_self or is_privileged):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the intern themselves, HR, or System Admin can request conversion.",
+            )
+
+        if employee.conversion_status == ConversionStatus.PENDING:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A conversion request is already pending for this employee.",
+            )
+
+        employee.conversion_status = ConversionStatus.PENDING
+        await self.repo.save(employee)
+        await self.audit.log(requester.id, "employee_conversion_request", "employee", str(employee.id))
+        return employee
+
+    async def decide_conversion(self, employee: Employee, approve: bool, requester: User) -> Employee:
+        """'Team approval' — the reporting manager (or HR/System Admin)
+        approves or rejects a pending conversion request. Approval flips
+        employment_type from intern to full_time immediately."""
+        is_privileged = requester.role in FULL_ACCESS_ROLES
+        is_manager = False
+        if not is_privileged:
+            requester_employee = await self.repo.get_by_user_id(requester.id)
+            is_manager = (
+                requester_employee is not None
+                and employee.reporting_manager_id == requester_employee.id
+            )
+
+        if not (is_privileged or is_manager):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Only this employee's reporting manager, HR Admin, HR Executive, "
+                    "or System Admin can decide on a conversion request."
+                ),
+            )
+
+        if employee.conversion_status != ConversionStatus.PENDING:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="There is no pending conversion request for this employee.",
+            )
+
+        if approve:
+            employee.employment_type = EmploymentType.FULL_TIME
+            employee.conversion_status = ConversionStatus.APPROVED
+        else:
+            employee.conversion_status = ConversionStatus.REJECTED
+
+        await self.repo.save(employee)
+        await self.audit.log(
+            requester.id,
+            "employee_conversion_decide",
+            "employee",
+            str(employee.id),
+            detail="approved" if approve else "rejected",
+        )
         return employee

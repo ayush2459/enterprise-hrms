@@ -155,6 +155,7 @@ export default function RecruitmentPage() {
                 <tr>
                   <th className="px-5 py-3 font-medium">Candidate</th>
                   <th className="px-5 py-3 font-medium">Email</th>
+                  <th className="px-5 py-3 font-medium">Notice Period</th>
                   <th className="px-5 py-3 font-medium">Stage</th>
                   <th className="px-5 py-3 font-medium text-right">Actions</th>
                 </tr>
@@ -164,6 +165,9 @@ export default function RecruitmentPage() {
                   <tr key={c.id}>
                     <td className="px-5 py-3 font-medium text-brand-dark">{c.full_name}</td>
                     <td className="px-5 py-3 text-gray-600">{c.email}</td>
+                    <td className="px-5 py-3 text-gray-600">
+                      {c.notice_period_days != null ? `${c.notice_period_days} days` : "—"}
+                    </td>
                     <td className="px-5 py-3">
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${STAGE_STYLES[c.stage]}`}>
                         {c.stage.replace("_", " ")}
@@ -209,7 +213,7 @@ export default function RecruitmentPage() {
                 ))}
                 {candidates.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-5 py-8 text-center text-gray-400">
+                    <td colSpan={5} className="px-5 py-8 text-center text-gray-400">
                       No candidates for this opening yet.
                     </td>
                   </tr>

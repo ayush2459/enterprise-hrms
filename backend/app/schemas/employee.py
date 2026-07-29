@@ -2,7 +2,7 @@ import uuid
 from datetime import date
 from pydantic import BaseModel, ConfigDict, EmailStr
 
-from app.models.enums import EmployeeStatus, EmploymentType, SelectionStatus
+from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, SelectionStatus
 
 
 class EmployeeBase(BaseModel):
@@ -12,6 +12,7 @@ class EmployeeBase(BaseModel):
     employment_type: EmploymentType = EmploymentType.FULL_TIME
     date_of_joining: date | None = None
     reporting_manager_id: uuid.UUID | None = None
+    notice_period_days: int | None = None
 
 
 class EmployeeCreate(EmployeeBase):
@@ -45,6 +46,7 @@ class EmployeeUpdate(BaseModel):
     designation: str | None = None
     employment_type: EmploymentType | None = None
     reporting_manager_id: uuid.UUID | None = None
+    notice_period_days: int | None = None
     date_of_birth: date | None = None
     gender: str | None = None
     personal_address: str | None = None
@@ -62,6 +64,7 @@ class EmployeeReadPublic(EmployeeBase):
     photo_url: str | None = None
     status: EmployeeStatus
     selection_status: SelectionStatus
+    conversion_status: ConversionStatus
 
 
 class EmployeeReadFull(EmployeeReadPublic):
@@ -72,3 +75,7 @@ class EmployeeReadFull(EmployeeReadPublic):
     blood_group: str | None = None
     emergency_contact: str | None = None
     personal_email: str | None = None
+
+
+class ConversionDecisionRequest(BaseModel):
+    approve: bool

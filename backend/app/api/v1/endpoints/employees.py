@@ -10,6 +10,7 @@ from app.models.enums import RoleEnum
 from app.models.user import User
 from app.repositories.employee_repository import EmployeeRepository
 from app.schemas.employee import (
+    ConversionDecisionRequest,
     EmployeeCreateRequest,
     EmployeeCreateResponse,
     EmployeeReadFull,
@@ -87,3 +88,40 @@ async def update_employee(
     updated = await EmployeeService(db).update_employee(employee, payload, current_user)
     await db.commit()
     return updated
+
+
+@router.post("/{employee_id}/conversion/request", response_model=EmployeeReadFull | EmployeeReadPublic)
+async def request_conversion(
+    employee_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """An intern (or HR on their behalf) requests conversion to full-time."""
+    employee = await EmployeeRepository(db).get_by_id(employee_id)
+    if employee is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+
+    updated = await EmployeeService(db).request_conversion(employee, current_user)
+    result = await EmployeeService(db).get_visible_profile(updated, current_user)
+    await db.commit()
+    return result
+
+
+@router.post("/{employee_id}/conversion/decide", response_model=EmployeeReadFull | EmployeeReadPublic)
+async def decide_conversion(
+    employee_id: UUID,
+    payload: ConversionDecisionRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """The reporting manager (or HR/System Admin) approves or rejects a
+    pending conversion request — 'team approval' turns the intern into a
+    full-time employee immediately."""
+    employee = await EmployeeRepository(db).get_by_id(employee_id)
+    if employee is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+
+    updated = await EmployeeService(db).decide_conversion(employee, payload.approve, current_user)
+    result = await EmployeeService(db).get_visible_profile(updated, current_user)
+    await db.commit()
+    return result

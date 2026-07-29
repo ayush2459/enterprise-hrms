@@ -34,6 +34,7 @@ class CandidateRead(BaseModel):
     full_name: str
     email: str
     phone: str | None = None
+    notice_period_days: int | None = None
     resume_file_name: str | None = None
     stage: CandidateStage
     notes: str | None = None

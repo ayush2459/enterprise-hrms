@@ -39,4 +39,19 @@ export const employeeService = {
     const { data } = await api.patch<EmployeeFull>(`/employees/${id}`, payload);
     return data;
   },
+
+  async requestConversion(id: string) {
+    const { data } = await api.post<EmployeeFull | EmployeePublic>(
+      `/employees/${id}/conversion/request`
+    );
+    return data;
+  },
+
+  async decideConversion(id: string, approve: boolean) {
+    const { data } = await api.post<EmployeeFull | EmployeePublic>(
+      `/employees/${id}/conversion/decide`,
+      { approve }
+    );
+    return data;
+  },
 };

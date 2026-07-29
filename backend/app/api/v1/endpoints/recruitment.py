@@ -69,12 +69,13 @@ async def add_candidate(
     full_name: str = Form(...),
     email: str = Form(...),
     phone: str | None = Form(None),
+    notice_period_days: int | None = Form(None),
     resume: UploadFile | None = File(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await RecruitmentService(db).add_candidate(
-        opening_id, full_name, email, phone, resume, current_user
+        opening_id, full_name, email, phone, notice_period_days, resume, current_user
     )
     await db.commit()
     return result
