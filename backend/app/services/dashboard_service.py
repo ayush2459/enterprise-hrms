@@ -23,6 +23,7 @@ from app.schemas.dashboard import (
     PendingApprovals,
     PolicyUpdate,
     RecentJoiner,
+    SeparatedEmployeeSummary,
     UpcomingEvent,
 )
 
@@ -83,6 +84,21 @@ class DashboardService:
                 date_of_joining=e.date_of_joining,
             )
             for e in recent_joiner_rows
+        ]
+
+        total_separated = await self.employees.count_separated()
+        separated_rows = await self.employees.list_recent_separations(10)
+        recently_separated = [
+            SeparatedEmployeeSummary(
+                id=e.id,
+                full_name=e.full_name,
+                designation=e.designation,
+                department=e.department,
+                status=e.status,
+                separation_date=e.separation_date,
+                separation_reason=e.separation_reason,
+            )
+            for e in separated_rows
         ]
 
         policy_rows = await self.policies.list_recent(5)
@@ -149,9 +165,11 @@ class DashboardService:
             insurance_pending=insurance_pending,
             pending_document_verifications=pending_doc_verifications,
             leaves_today=leaves_today,
+            total_separated=total_separated,
             employees_by_department=employees_by_department,
             headcount_trend=headcount_trend,
             recent_joiners=recent_joiners,
+            recently_separated=recently_separated,
             pending_approvals=PendingApprovals(
                 leave_requests=pending_leave_requests,
                 document_verifications=pending_doc_verifications,

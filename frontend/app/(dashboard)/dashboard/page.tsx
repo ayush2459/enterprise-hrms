@@ -19,6 +19,7 @@ import {
   Contact,
   Sparkles,
   Plus,
+  UserX,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -143,6 +144,7 @@ export default function DashboardPage() {
                 accent="warning"
               />
               <KPICard label="On Leave Today" value={summary.leaves_today} icon={CalendarDays} accent="accent" />
+              <KPICard label="Former Employees" value={summary.total_separated} icon={UserX} accent="warning" />
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -261,6 +263,36 @@ export default function DashboardPage() {
                   </ul>
                 ) : (
                   <EmptyState icon={UserPlus} label="No employees yet." />
+                )}
+              </Card>
+
+              <Card className="animate-fade-up" style={{ animationDelay: "200ms" }}>
+                <div className="mb-3 flex items-center justify-between">
+                  <h2 className="font-display text-sm font-semibold text-ink">Recently Left</h2>
+                  <Link href="/employees/former" className="text-xs text-brand hover:underline">
+                    View All
+                  </Link>
+                </div>
+                {summary.recently_separated.length > 0 ? (
+                  <ul className="space-y-3">
+                    {summary.recently_separated.map((s) => (
+                      <li key={s.id} className="flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-xs font-semibold text-red-500">
+                          {s.full_name.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-ink">{s.full_name}</p>
+                          <p className="truncate text-xs text-ink-faint capitalize">
+                            {s.status}
+                            {s.separation_date &&
+                              ` · ${new Date(s.separation_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyState icon={UserX} label="Nobody has left the company." />
                 )}
               </Card>
 

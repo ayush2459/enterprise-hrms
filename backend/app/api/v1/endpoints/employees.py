@@ -17,6 +17,8 @@ from app.schemas.employee import (
     EmployeeReadPublic,
     EmployeeStats,
     EmployeeUpdate,
+    OffboardRequest,
+    SeparatedEmployee,
 )
 from app.services.employee_service import EmployeeService
 
@@ -30,8 +32,23 @@ async def list_employees(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Directory view — every authenticated role can see the public fields."""
+    """Directory view — every authenticated role can see the public
+    fields. Only currently active employees show up here; anyone marked
+    resigned/terminated is excluded (see /separated for that list)."""
     return await EmployeeService(db).list_directory(skip, limit)
+
+
+@router.get("/separated", response_model=list[SeparatedEmployee])
+async def list_separated_employees(
+    skip: int = 0,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Everyone who has resigned or been terminated — the 'former
+    employees' list. Registered before /{employee_id} so it doesn't get
+    swallowed by the dynamic route."""
+    return await EmployeeService(db).list_separated(skip, limit)
 
 
 @router.get("/stats/summary", response_model=EmployeeStats)
@@ -125,3 +142,46 @@ async def decide_conversion(
     result = await EmployeeService(db).get_visible_profile(updated, current_user)
     await db.commit()
     return result
+
+
+@router.post(
+    "/{employee_id}/offboard",
+    response_model=EmployeeReadFull,
+    dependencies=[Depends(require_roles(RoleEnum.HR_ADMIN, RoleEnum.HR_EXECUTIVE, RoleEnum.SYSTEM_ADMIN))],
+)
+async def offboard_employee(
+    employee_id: UUID,
+    payload: OffboardRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark an employee as resigned or terminated. Removes them from the
+    active directory and dashboard, and revokes their login."""
+    employee = await EmployeeRepository(db).get_by_id(employee_id)
+    if employee is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+
+    updated = await EmployeeService(db).offboard_employee(employee, payload, current_user)
+    await db.commit()
+    return EmployeeReadFull.model_validate(updated)
+
+
+@router.post(
+    "/{employee_id}/reactivate",
+    response_model=EmployeeReadFull,
+    dependencies=[Depends(require_roles(RoleEnum.HR_ADMIN, RoleEnum.HR_EXECUTIVE, RoleEnum.SYSTEM_ADMIN))],
+)
+async def reactivate_employee(
+    employee_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Undo a resigned/terminated marking — brings the employee back onto
+    the active roster and restores their login."""
+    employee = await EmployeeRepository(db).get_by_id(employee_id)
+    if employee is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+
+    updated = await EmployeeService(db).reactivate_employee(employee, current_user)
+    await db.commit()
+    return EmployeeReadFull.model_validate(updated)

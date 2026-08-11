@@ -62,6 +62,9 @@ class Settings(BaseSettings):
         "image/png",
     ]
 
+    # ---- Data backups (System Admin "reset all data" tool) ----
+    BACKUP_ROOT: str = "/app/backups"
+
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v):

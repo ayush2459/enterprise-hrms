@@ -14,6 +14,8 @@ export interface User {
   mfa_enabled: boolean;
 }
 
+export type EmployeeStatus = "active" | "on_leave" | "offboarded" | "resigned" | "terminated";
+
 export interface EmployeePublic {
   id: string;
   full_name: string;
@@ -22,9 +24,11 @@ export interface EmployeePublic {
   employment_type: "full_time" | "intern" | "contract";
   date_of_joining: string | null;
   photo_url: string | null;
-  status: "active" | "on_leave" | "offboarded";
+  status: EmployeeStatus;
   notice_period_days: number | null;
   conversion_status: "not_applicable" | "pending" | "approved" | "rejected";
+  separation_date: string | null;
+  separation_reason: string | null;
 }
 
 export interface EmployeeFull extends EmployeePublic {
@@ -59,6 +63,22 @@ export interface EmployeeStats {
   active_today: number;
   pending_bgv: number | null;
   policy_acknowledgements_due: number | null;
+}
+
+export interface SeparatedEmployee {
+  id: string;
+  full_name: string;
+  department: string | null;
+  designation: string | null;
+  status: EmployeeStatus;
+  separation_date: string | null;
+  separation_reason: string | null;
+}
+
+export interface OffboardInput {
+  status: "resigned" | "terminated";
+  reason?: string;
+  effective_date?: string;
 }
 
 export interface LoginResponse {
@@ -130,7 +150,7 @@ export interface TeamMember {
   designation: string | null;
   department: string | null;
   official_email: string;
-  status: "active" | "on_leave" | "offboarded";
+  status: EmployeeStatus;
   employment_type: "full_time" | "intern" | "contract";
 }
 
@@ -330,6 +350,16 @@ export interface RecentJoiner {
   date_of_joining: string | null;
 }
 
+export interface SeparatedEmployeeSummary {
+  id: string;
+  full_name: string;
+  designation: string | null;
+  department: string | null;
+  status: EmployeeStatus;
+  separation_date: string | null;
+  separation_reason: string | null;
+}
+
 export interface PendingApprovals {
   leave_requests: number;
   document_verifications: number;
@@ -367,9 +397,11 @@ export interface DashboardSummary {
   insurance_pending: number;
   pending_document_verifications: number;
   leaves_today: number;
+  total_separated: number;
   employees_by_department: DepartmentBreakdown[];
   headcount_trend: HeadcountPoint[];
   recent_joiners: RecentJoiner[];
+  recently_separated: SeparatedEmployeeSummary[];
   pending_approvals: PendingApprovals;
   policy_updates: PolicyUpdate[];
   upcoming_events: UpcomingEvent[];

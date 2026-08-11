@@ -1,5 +1,6 @@
 import uuid
 from datetime import date
+from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, SelectionStatus
@@ -65,6 +66,8 @@ class EmployeeReadPublic(EmployeeBase):
     status: EmployeeStatus
     selection_status: SelectionStatus
     conversion_status: ConversionStatus
+    separation_date: date | None = None
+    separation_reason: str | None = None
 
 
 class EmployeeReadFull(EmployeeReadPublic):
@@ -79,3 +82,25 @@ class EmployeeReadFull(EmployeeReadPublic):
 
 class ConversionDecisionRequest(BaseModel):
     approve: bool
+
+
+class OffboardRequest(BaseModel):
+    """Marks an employee as resigned or fired. Effective date defaults to
+    today (server-side) if omitted."""
+    status: Literal["resigned", "terminated"]
+    reason: str | None = None
+    effective_date: date | None = None
+
+
+class SeparatedEmployee(BaseModel):
+    """Row shape for the 'people who have left the company' list —
+    directory + dashboard both use this."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    full_name: str
+    department: str | None = None
+    designation: str | None = None
+    status: EmployeeStatus
+    separation_date: date | None = None
+    separation_reason: str | None = None

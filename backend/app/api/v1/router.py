@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     account,
+    admin,
     attendance,
     auth,
     bgv,
@@ -22,6 +23,7 @@ from app.api.v1.endpoints import (
 api_router = APIRouter()
 api_router.include_router(auth.router)
 api_router.include_router(account.router)
+api_router.include_router(admin.router)
 api_router.include_router(employees.router)
 api_router.include_router(documents.router)
 api_router.include_router(bgv.router)

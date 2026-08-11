@@ -7,7 +7,7 @@ filtering happens in app/schemas + app/services, not here.
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, Enum, ForeignKey, Integer, String
+from sqlalchemy import Date, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -54,6 +54,14 @@ class Employee(Base, UUIDPkMixin, TimestampMixin):
     status: Mapped[EmployeeStatus] = mapped_column(
         Enum(EmployeeStatus, name="employee_status_enum"), default=EmployeeStatus.ACTIVE
     )
+
+    # ---- Offboarding (resigned / terminated) ----
+    # Populated only once the employee has left; stays null for everyone
+    # currently active. Kept on the row (soft-separation, not a hard
+    # delete) so the "people who left" list on the dashboard has
+    # something to show and history isn't destroyed by an offboard.
+    separation_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    separation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     reporting_manager_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("employees.id", ondelete="SET NULL"), nullable=True
