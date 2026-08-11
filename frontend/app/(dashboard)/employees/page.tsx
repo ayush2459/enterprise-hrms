@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus } from "lucide-react";
+import { UserPlus, UserX } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -34,7 +34,15 @@ export default function EmployeesPage() {
     <>
       <Topbar title="Employees" subtitle="Company directory" />
       <div className="p-8">
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex justify-end gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => router.push("/employees/former")}
+            className="flex items-center gap-2"
+          >
+            <UserX size={16} />
+            Former Employees
+          </Button>
           <Button onClick={() => setShowAddModal(true)} className="flex items-center gap-2">
             <UserPlus size={16} />
             Add Employee

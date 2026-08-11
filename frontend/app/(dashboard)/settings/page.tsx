@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { accountService } from "@/services/account.service";
 import { authService } from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth.store";
+import { DangerZoneCard } from "@/components/settings/DangerZoneCard";
 
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
@@ -257,6 +258,8 @@ export default function SettingsPage() {
             </Button>
           )}
         </Card>
+
+        {user?.role === "system_admin" && <DangerZoneCard />}
       </div>
     </>
   );

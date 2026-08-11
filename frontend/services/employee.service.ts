@@ -5,6 +5,8 @@ import type {
   EmployeeFull,
   EmployeePublic,
   EmployeeStats,
+  OffboardInput,
+  SeparatedEmployee,
 } from "@/types";
 
 // No trailing slash on the collection routes ("/employees", not
@@ -15,6 +17,13 @@ import type {
 export const employeeService = {
   async list(skip = 0, limit = 50) {
     const { data } = await api.get<EmployeePublic[]>("/employees", {
+      params: { skip, limit },
+    });
+    return data;
+  },
+
+  async listSeparated(skip = 0, limit = 50) {
+    const { data } = await api.get<SeparatedEmployee[]>("/employees/separated", {
       params: { skip, limit },
     });
     return data;
@@ -52,6 +61,16 @@ export const employeeService = {
       `/employees/${id}/conversion/decide`,
       { approve }
     );
+    return data;
+  },
+
+  async offboard(id: string, payload: OffboardInput) {
+    const { data } = await api.post<EmployeeFull>(`/employees/${id}/offboard`, payload);
+    return data;
+  },
+
+  async reactivate(id: string) {
+    const { data } = await api.post<EmployeeFull>(`/employees/${id}/reactivate`);
     return data;
   },
 };

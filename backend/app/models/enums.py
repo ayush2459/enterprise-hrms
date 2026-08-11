@@ -43,6 +43,14 @@ class EmployeeStatus(str, enum.Enum):
     ACTIVE = "active"
     ON_LEAVE = "on_leave"
     OFFBOARDED = "offboarded"
+    RESIGNED = "resigned"
+    TERMINATED = "terminated"
+
+
+# Statuses that mean "no longer with the company" — used everywhere we
+# need to exclude ex-employees from the active roster (directory,
+# dashboard headcount) and everywhere we need to list who has left.
+SEPARATED_STATUSES = (EmployeeStatus.RESIGNED, EmployeeStatus.TERMINATED)
 
 
 class ConversionStatus(str, enum.Enum):

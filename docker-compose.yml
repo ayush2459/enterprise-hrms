@@ -50,6 +50,7 @@ services:
     volumes:
       - ./backend:/app
       - uploads_data:/app/uploads
+      - backups_data:/app/backups
     networks:
       - hrms_network
 
@@ -83,6 +84,7 @@ services:
 volumes:
   postgres_data:
   uploads_data:
+  backups_data:
 
 networks:
   hrms_network:

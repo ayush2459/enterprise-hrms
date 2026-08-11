@@ -2,6 +2,8 @@ import uuid
 from datetime import date
 from pydantic import BaseModel
 
+from app.models.enums import EmployeeStatus
+
 
 class DepartmentBreakdown(BaseModel):
     department: str
@@ -19,6 +21,17 @@ class RecentJoiner(BaseModel):
     designation: str | None = None
     department: str | None = None
     date_of_joining: date | None = None
+
+
+class SeparatedEmployeeSummary(BaseModel):
+    """Row shape for the dashboard's real-time 'people who left' panel."""
+    id: uuid.UUID
+    full_name: str
+    designation: str | None = None
+    department: str | None = None
+    status: EmployeeStatus
+    separation_date: date | None = None
+    separation_reason: str | None = None
 
 
 class PendingApprovals(BaseModel):
@@ -51,9 +64,11 @@ class DashboardSummary(BaseModel):
     insurance_pending: int
     pending_document_verifications: int
     leaves_today: int
+    total_separated: int
     employees_by_department: list[DepartmentBreakdown]
     headcount_trend: list[HeadcountPoint]
     recent_joiners: list[RecentJoiner]
+    recently_separated: list[SeparatedEmployeeSummary]
     pending_approvals: PendingApprovals
     policy_updates: list[PolicyUpdate]
     upcoming_events: list[UpcomingEvent]

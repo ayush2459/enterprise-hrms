@@ -3,14 +3,17 @@ Employee business logic, including the field-level visibility rule from
 Section 3: only HR Admin, HR Executive, and the employee themself see
 sensitive fields (blood group, personal address, emergency contact).
 """
+from datetime import date
 from uuid import UUID
 
 from fastapi import HTTPException, status
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
 from app.models.employee import Employee
-from app.models.enums import ConversionStatus, EmploymentType, RoleEnum
+from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, RoleEnum
+from app.models.refresh_token import RefreshToken
 from app.models.user import User
 from app.repositories.employee_repository import EmployeeRepository
 from app.repositories.user_repository import UserRepository
@@ -21,11 +24,14 @@ from app.schemas.employee import (
     EmployeeReadPublic,
     EmployeeStats,
     EmployeeUpdate,
+    OffboardRequest,
+    SeparatedEmployee,
 )
 from app.services.audit_service import AuditService
 from app.utils.password_generator import generate_temp_password
 
 FULL_ACCESS_ROLES = {RoleEnum.HR_ADMIN, RoleEnum.HR_EXECUTIVE, RoleEnum.SYSTEM_ADMIN}
+STATUS_MAP = {"resigned": EmployeeStatus.RESIGNED, "terminated": EmployeeStatus.TERMINATED}
 
 
 class EmployeeService:
@@ -200,3 +206,81 @@ class EmployeeService:
             detail="approved" if approve else "rejected",
         )
         return employee
+
+    async def offboard_employee(
+        self, employee: Employee, payload: OffboardRequest, requester: User
+    ) -> Employee:
+        """Marks an employee as resigned or terminated. This is the one
+        place that takes someone off the active roster: it flips their
+        status (so they drop out of the directory and dashboard counts,
+        which both filter on SEPARATED_STATUSES), locks their login by
+        deactivating their user account, and revokes any refresh tokens
+        so an already-issued session can't keep working."""
+        if requester.role not in FULL_ACCESS_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only HR Admin, HR Executive, or System Admin can offboard an employee.",
+            )
+
+        if employee.status in (EmployeeStatus.RESIGNED, EmployeeStatus.TERMINATED):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"This employee is already marked as {employee.status.value}.",
+            )
+
+        new_status = STATUS_MAP[payload.status]
+        employee.status = new_status
+        employee.separation_date = payload.effective_date or date.today()
+        employee.separation_reason = payload.reason
+
+        user = await self.users.get_by_id(employee.user_id)
+        if user is not None:
+            user.is_active = False
+            await self.users.save(user)
+            await self.db.execute(
+                update(RefreshToken)
+                .where(RefreshToken.user_id == user.id, RefreshToken.revoked.is_(False))
+                .values(revoked=True)
+            )
+
+        await self.repo.save(employee)
+        await self.audit.log(
+            requester.id,
+            "employee_offboard",
+            "employee",
+            str(employee.id),
+            detail=payload.status,
+        )
+        return employee
+
+    async def reactivate_employee(self, employee: Employee, requester: User) -> Employee:
+        """Undo an offboard — brings someone back onto the active roster
+        and restores their login. Useful for a mis-click or a rehire."""
+        if requester.role not in FULL_ACCESS_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only HR Admin, HR Executive, or System Admin can reactivate an employee.",
+            )
+
+        if employee.status not in (EmployeeStatus.RESIGNED, EmployeeStatus.TERMINATED):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This employee is not currently marked as separated.",
+            )
+
+        employee.status = EmployeeStatus.ACTIVE
+        employee.separation_date = None
+        employee.separation_reason = None
+
+        user = await self.users.get_by_id(employee.user_id)
+        if user is not None:
+            user.is_active = True
+            await self.users.save(user)
+
+        await self.repo.save(employee)
+        await self.audit.log(requester.id, "employee_reactivate", "employee", str(employee.id))
+        return employee
+
+    async def list_separated(self, skip: int, limit: int) -> list[SeparatedEmployee]:
+        employees = await self.repo.list_separated(skip, limit)
+        return [SeparatedEmployee.model_validate(e) for e in employees]

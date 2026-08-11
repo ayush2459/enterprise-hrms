@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Edit2, Plus, User as UserIcon } from "lucide-react";
+import { ArrowLeft, Edit2, Plus, User as UserIcon, UserX, UserCheck } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loader } from "@/components/common/Loader";
 import { EditPersonalDetailsModal } from "@/components/employees/EditPersonalDetailsModal";
+import { OffboardEmployeeModal } from "@/components/employees/OffboardEmployeeModal";
 import { AddDependentModal } from "@/components/insurance/AddDependentModal";
 import { employeeService } from "@/services/employee.service";
 import { teamService } from "@/services/team.service";
@@ -18,6 +19,7 @@ import { attendanceService } from "@/services/attendance.service";
 import { leaveService } from "@/services/leave.service";
 import { documentService } from "@/services/document.service";
 import { bgvService } from "@/services/bgv.service";
+import { useAuthStore } from "@/store/auth.store";
 import type {
   AttendanceSummary,
   BGVCheck,
@@ -34,6 +36,8 @@ import type {
 function isFull(e: EmployeeFull | EmployeePublic): e is EmployeeFull {
   return "personal_address" in e;
 }
+
+const HR_ROLES = ["hr_admin", "hr_executive", "system_admin"];
 
 function calculateAge(dob: string | null): number | null {
   if (!dob) return null;
@@ -84,9 +88,14 @@ export default function EmployeeProfilePage() {
   const params = useParams();
   const router = useRouter();
   const employeeId = params.id as string;
+  const { user } = useAuthStore();
+  const isHR = !!user && HR_ROLES.includes(user.role);
 
   const [employee, setEmployee] = useState<EmployeeFull | EmployeePublic | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showOffboardModal, setShowOffboardModal] = useState(false);
+  const [reactivateLoading, setReactivateLoading] = useState(false);
+  const [reactivateError, setReactivateError] = useState<string | null>(null);
   const [showAddDependentModal, setShowAddDependentModal] = useState(false);
   const [org, setOrg] = useState<OrgSnippet | null>(null);
   const [insurance, setInsurance] = useState<InsuranceFull | null>(null);
@@ -104,6 +113,19 @@ export default function EmployeeProfilePage() {
 
   const reloadEmployee = () => {
     employeeService.getById(employeeId).then(setEmployee);
+  };
+
+  const handleReactivate = async () => {
+    setReactivateError(null);
+    setReactivateLoading(true);
+    try {
+      const updated = await employeeService.reactivate(employeeId);
+      setEmployee(updated);
+    } catch (err: any) {
+      setReactivateError(err?.response?.data?.detail ?? "Could not reactivate this employee.");
+    } finally {
+      setReactivateLoading(false);
+    }
   };
 
   const handleRequestConversion = async () => {
@@ -190,6 +212,7 @@ export default function EmployeeProfilePage() {
   const latestReview = reviews[reviews.length - 1];
   const documentsVerified = documents.filter((d) => d.status === "verified").length;
   const bgvCleared = bgvChecks.filter((c) => c.status === "cleared").length;
+  const isSeparated = employee.status === "resigned" || employee.status === "terminated";
 
   return (
     <>
@@ -202,6 +225,37 @@ export default function EmployeeProfilePage() {
           <ArrowLeft size={16} />
           Back to Employees
         </button>
+
+        {isSeparated && (
+          <Card className="border-red-100 bg-red-50">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-red-700 capitalize">
+                  {employee.status} {employee.separation_date && `on ${new Date(employee.separation_date).toLocaleDateString()}`}
+                </p>
+                {employee.separation_reason && (
+                  <p className="mt-1 text-xs text-red-600">{employee.separation_reason}</p>
+                )}
+                <p className="mt-1 text-xs text-red-500">
+                  This person no longer appears in the active directory or dashboard, and their
+                  login has been revoked.
+                </p>
+              </div>
+              {isHR && (
+                <Button
+                  variant="secondary"
+                  onClick={handleReactivate}
+                  disabled={reactivateLoading}
+                  className="flex shrink-0 items-center gap-2 text-xs"
+                >
+                  <UserCheck size={14} />
+                  {reactivateLoading ? "Restoring..." : "Reactivate"}
+                </Button>
+              )}
+            </div>
+            {reactivateError && <p className="mt-2 text-xs text-red-600">{reactivateError}</p>}
+          </Card>
+        )}
 
         {/* Header */}
         <Card className="flex items-center gap-4">
@@ -217,6 +271,16 @@ export default function EmployeeProfilePage() {
           <span className="rounded-full bg-surface-muted px-3 py-1 text-xs font-medium capitalize text-brand-dark">
             {employee.status.replace("_", " ")}
           </span>
+          {isHR && !isSeparated && (
+            <Button
+              variant="danger"
+              onClick={() => setShowOffboardModal(true)}
+              className="flex items-center gap-2 text-xs px-3 py-1.5"
+            >
+              <UserX size={14} />
+              Mark as Left
+            </Button>
+          )}
         </Card>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -456,6 +520,14 @@ export default function EmployeeProfilePage() {
           employeeId={employeeId}
           onClose={() => setShowAddDependentModal(false)}
           onAdded={reloadInsurance}
+        />
+      )}
+      {showOffboardModal && (
+        <OffboardEmployeeModal
+          employeeId={employeeId}
+          employeeName={employee.full_name}
+          onClose={() => setShowOffboardModal(false)}
+          onDone={reloadEmployee}
         />
       )}
     </>
