@@ -1,20 +1,18 @@
 """
-Creates the very first System Admin user, for a brand-new database that
-has no logins yet. There's no self-service signup in this app by design
-(Section 3: accounts are provisioned by HR/Admin) — so the very first
-account has to be created this way, once, outside the API.
+Automatically creates the first System Admin from environment variables.
 
-Usage (inside the backend container):
-    docker compose exec backend python scripts/create_admin.py
+Required:
+    ADMIN_EMAIL
+    ADMIN_PASSWORD
 """
+
 import asyncio
-import getpass
+import os
 import sys
 
 sys.path.insert(0, "/app")
 
 from sqlalchemy import select
-
 from app.core.security import hash_password
 from app.db.session import AsyncSessionLocal
 from app.models.enums import RoleEnum
@@ -22,25 +20,28 @@ from app.models.user import User
 
 
 async def main():
-    print("=== Create the first System Admin ===")
-    email = input("Email: ").strip()
+    email = os.getenv("ADMIN_EMAIL", "").strip()
+    password = os.getenv("ADMIN_PASSWORD", "")
+
     if not email:
-        print("Email is required.")
+        print("ADMIN_EMAIL is not set. Skipping admin creation.")
         return
 
-    password = getpass.getpass("Password: ")
-    confirm = getpass.getpass("Confirm password: ")
-    if password != confirm:
-        print("Passwords do not match.")
+    if not password:
+        print("ADMIN_PASSWORD is not set. Skipping admin creation.")
         return
+
     if len(password) < 8:
-        print("Password should be at least 8 characters.")
+        print("ADMIN_PASSWORD must be at least 8 characters.")
         return
 
     async with AsyncSessionLocal() as db:
-        existing = await db.execute(select(User).where(User.official_email == email))
+        existing = await db.execute(
+            select(User).where(User.official_email == email)
+        )
+
         if existing.scalar_one_or_none() is not None:
-            print(f"A user with email {email} already exists.")
+            print(f"System Admin already exists: {email}")
             return
 
         user = User(
@@ -49,11 +50,11 @@ async def main():
             role=RoleEnum.SYSTEM_ADMIN,
             is_active=True,
         )
+
         db.add(user)
         await db.commit()
 
-    print(f"\nSystem Admin created: {email}")
-    print("You can now log in at the frontend with this email and password.")
+    print(f"System Admin automatically created: {email}")
 
 
 if __name__ == "__main__":
