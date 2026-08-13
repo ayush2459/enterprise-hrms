@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, UserX } from "lucide-react";
+import { UserPlus, FileUp } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loader } from "@/components/common/Loader";
 import { AddEmployeeModal } from "@/components/employees/AddEmployeeModal";
+import { ImportEmployeesModal } from "@/components/employees/ImportEmployeesModal";
 import { employeeService } from "@/services/employee.service";
 import type { EmployeePublic } from "@/types";
 
@@ -16,6 +17,7 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<EmployeePublic[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const loadEmployees = () => {
     setLoading(true);
@@ -37,11 +39,11 @@ export default function EmployeesPage() {
         <div className="mb-4 flex justify-end gap-2">
           <Button
             variant="secondary"
-            onClick={() => router.push("/employees/former")}
+            onClick={() => setShowImportModal(true)}
             className="flex items-center gap-2"
           >
-            <UserX size={16} />
-            Former Employees
+            <FileUp size={16} />
+            Import from Excel
           </Button>
           <Button onClick={() => setShowAddModal(true)} className="flex items-center gap-2">
             <UserPlus size={16} />
@@ -92,6 +94,13 @@ export default function EmployeesPage() {
         <AddEmployeeModal
           onClose={() => setShowAddModal(false)}
           onCreated={loadEmployees}
+        />
+      )}
+
+      {showImportModal && (
+        <ImportEmployeesModal
+          onClose={() => setShowImportModal(false)}
+          onImported={loadEmployees}
         />
       )}
     </>

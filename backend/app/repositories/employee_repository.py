@@ -38,7 +38,7 @@ class EmployeeRepository:
         result = await self.db.execute(
             select(Employee)
             .where(Employee.status.in_(SEPARATED_STATUSES))
-            .order_by(Employee.separation_date.desc().nulls_last(), Employee.updated_at.desc())
+            .order_by(Employee.offboarded_at.desc().nulls_last(), Employee.updated_at.desc())
             .offset(skip)
             .limit(limit)
         )

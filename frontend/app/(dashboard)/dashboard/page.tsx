@@ -283,9 +283,9 @@ export default function DashboardPage() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-ink">{s.full_name}</p>
                           <p className="truncate text-xs text-ink-faint capitalize">
-                            {s.status}
-                            {s.separation_date &&
-                              ` · ${new Date(s.separation_date).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}
+                            {s.offboard_reason ?? "Separated"}
+                            {s.offboarded_at &&
+                              ` · ${new Date(s.offboarded_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`}
                           </p>
                         </div>
                       </li>
