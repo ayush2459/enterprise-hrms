@@ -1,3 +1,4 @@
+from sqlalchemy import select
 """
 Company events (team outings, holidays, inductions, etc.) — HR-only to
 create, visible to everyone since it's calendar-style org info, same
@@ -34,3 +35,42 @@ class EventService:
 
     async def list_upcoming(self, within_days: int = 30) -> list[CompanyEvent]:
         return await self.events.list_upcoming(within_days)
+
+    async def update_event(
+        self,
+        event_id,
+        title=None,
+        event_date=None,
+        category=None,
+    ):
+        result = await self.db.execute(
+            select(CompanyEvent).where(CompanyEvent.id == event_id)
+        )
+        event = result.scalar_one_or_none()
+
+        if event is None:
+            return None
+
+        if title is not None:
+            event.title = title
+
+        if event_date is not None:
+            event.event_date = event_date
+
+        if category is not None:
+            event.category = category
+
+        return event
+
+    async def delete_event(self, event_id):
+        result = await self.db.execute(
+            select(CompanyEvent).where(CompanyEvent.id == event_id)
+        )
+        event = result.scalar_one_or_none()
+
+        if event is None:
+            return False
+
+        await self.db.delete(event)
+        return True
+
