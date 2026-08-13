@@ -378,6 +378,8 @@ export interface RecentDeparture {
     | "other"
     | null;
   offboarded_at: string | null;
+  status: string;
+  separation_date: string;
 }
 
 export interface PendingApprovals {
