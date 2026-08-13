@@ -11,4 +11,19 @@ export const holidayService = {
     const { data } = await api.post<Holiday>("/holidays", payload);
     return data;
   },
+
+  async update(
+    holidayId: string,
+    payload: { name: string; date: string; is_optional?: boolean }
+  ) {
+    const { data } = await api.patch<Holiday>(
+      `/holidays/${holidayId}`,
+      payload
+    );
+    return data;
+  },
+
+  async delete(holidayId: string) {
+    await api.delete(`/holidays/${holidayId}`);
+  },
 };

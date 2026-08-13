@@ -1,3 +1,48 @@
+from typing import Literal
+
+HR_DOCUMENT_TYPES = (
+    "pan_card",
+    "aadhaar_card",
+    "resume",
+    "passport",
+    "photograph",
+    "address_proof",
+    "bank_proof",
+    "educational_certificate",
+    "class_10_certificate",
+    "class_12_certificate",
+    "graduation_certificate",
+    "employment_proof",
+    "joining_letter",
+    "offer_letter",
+    "appraisal_letter",
+    "relieving_letter",
+    "experience_letter",
+    "other",
+)
+
+HRDocumentType = Literal[
+    "pan_card",
+    "aadhaar_card",
+    "resume",
+    "passport",
+    "photograph",
+    "address_proof",
+    "bank_proof",
+    "educational_certificate",
+    "class_10_certificate",
+    "class_12_certificate",
+    "graduation_certificate",
+    "employment_proof",
+    "joining_letter",
+    "offer_letter",
+    "appraisal_letter",
+    "relieving_letter",
+    "experience_letter",
+    "other",
+]
+
+
 import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict

@@ -32,7 +32,7 @@ class EmployeeRepository:
         result = await self.db.execute(query.offset(skip).limit(limit))
         return list(result.scalars().all())
 
-    async def list_separated(self, skip: int = 0, limit: int = 50) -> list[Employee]:
+    async def list_offboarded(self, skip: int = 0, limit: int = 50) -> list[Employee]:
         """Everyone who has resigned or been terminated, most recently
         separated first."""
         result = await self.db.execute(
@@ -44,9 +44,13 @@ class EmployeeRepository:
         )
         return list(result.scalars().all())
 
-    async def list_recent_separations(self, limit: int = 10) -> list[Employee]:
+    async def list_recent_offboarded(self, limit: int = 10) -> list[Employee]:
         """Used by the dashboard's real-time 'people who left' panel."""
-        return await self.list_separated(skip=0, limit=limit)
+        return await self.list_offboarded(skip=0, limit=limit)
+
+    async def list_recent_separations(self, limit: int = 10) -> list[Employee]:
+        """Backward-compatible alias used by the dashboard service."""
+        return await self.list_offboarded(skip=0, limit=limit)
 
     async def list_direct_reports(self, manager_employee_id: UUID) -> list[Employee]:
         result = await self.db.execute(

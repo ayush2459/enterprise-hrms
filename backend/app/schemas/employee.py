@@ -1,4 +1,5 @@
 import uuid
+from uuid import UUID
 from datetime import date
 from pydantic import BaseModel, ConfigDict, EmailStr
 
@@ -31,6 +32,19 @@ class EmployeeCreateResponse(BaseModel):
     full_name: str
     official_email: str
     temporary_password: str
+
+
+class OffboardedEmployee(BaseModel):
+    """Employee representation used by the former/offboarded employees view."""
+
+    id: UUID
+    full_name: str
+    designation: str | None = None
+    department: str | None = None
+    offboard_reason: OffboardReason | None = None
+    offboarded_at: date | None = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EmployeeStats(BaseModel):
@@ -98,8 +112,6 @@ class SeparatedEmployee(BaseModel):
     designation: str | None = None
     department: str | None = None
     status: EmployeeStatus
-    separation_date: date | None = None
-    separation_reason: str | None = None
 
 
 class ConversionDecisionRequest(BaseModel):

@@ -30,14 +30,20 @@ from app.utils.password_generator import generate_temp_password
 HEADER_ALIASES: dict[str, list[str]] = {
     "employee_number": ["employee number", "employee no", "employee no.", "emp no", "emp id"],
     "full_name": ["employee name", "name", "full name"],
+    "department": ["department", "dept"],
     "designation": ["designation", "title"],
     "employment_type": ["employeement type", "employment type", "type"],
     "gender": ["gender"],
+    "date_of_birth": ["date of birth", "dob", "birth date"],
     "date_of_joining": ["joined on", "joining date", "date of joining"],
     "offboarded_at": ["leaving date", "relieving date", "date of leaving"],
     "official_email": ["official email id", "official email", "email"],
     "personal_email": ["personal email id", "personal email"],
-    "mobile_number": ["mobile number", "mobile no", "mobile no.", "phone"],
+    "mobile_number": ["mobile number", "mobile no", "mobile no.", "phone", "contact number"],
+    "personal_address": ["personal address", "address", "home address", "residential address"],
+    "blood_group": ["blood group", "blood type"],
+    "emergency_contact": ["emergency contact", "emergency number", "emergency phone"],
+    "notice_period_days": ["notice period", "notice period days", "notice days"],
     "bank_account_number": ["bank account number", "bank account details", "account number"],
     "bank_ifsc": ["ifsc", "ifsc code", "bank ifsc"],
     "bank_name": ["bank name", "bank"],
@@ -159,10 +165,31 @@ class EmployeeImportService:
                 fields: dict = {}
                 if (v := _cell_to_str(get(row, "full_name"))) is not None:
                     fields["full_name"] = v
+                if (v := _cell_to_str(get(row, "department"))) is not None:
+                    fields["department"] = v
                 if (v := _cell_to_str(get(row, "designation"))) is not None:
                     fields["designation"] = v
                 if (v := _cell_to_str(get(row, "gender"))) is not None:
                     fields["gender"] = v
+
+                if (v := _cell_to_date(get(row, "date_of_birth"))) is not None:
+                    fields["date_of_birth"] = v
+
+                if (v := _cell_to_str(get(row, "personal_address"))) is not None:
+                    fields["personal_address"] = v
+
+                if (v := _cell_to_str(get(row, "blood_group"))) is not None:
+                    fields["blood_group"] = v
+
+                if (v := _cell_to_str(get(row, "emergency_contact"))) is not None:
+                    fields["emergency_contact"] = v
+
+                notice_raw = get(row, "notice_period_days")
+                if notice_raw is not None and str(notice_raw).strip() != "":
+                    try:
+                        fields["notice_period_days"] = int(float(str(notice_raw).strip()))
+                    except (ValueError, TypeError):
+                        pass
                 if (v := _cell_to_str(get(row, "personal_email"))) is not None:
                     fields["personal_email"] = v
                 if (v := _cell_to_str(get(row, "mobile_number"))) is not None:

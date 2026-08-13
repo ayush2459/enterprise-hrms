@@ -16,7 +16,7 @@ export function EditPersonalDetailsModal({
   employeeId: string;
   existing: EmployeeFull;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (updated: EmployeeFull) => void;
 }) {
   const [dateOfBirth, setDateOfBirth] = useState(existing.date_of_birth ?? "");
   const [gender, setGender] = useState(existing.gender ?? "");
@@ -50,7 +50,6 @@ export function EditPersonalDetailsModal({
         bank_name: bankName || null,
         pf_number: pfNumber || null,
       } as any);
-      onSaved();
       onClose();
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? "Could not save personal details.");

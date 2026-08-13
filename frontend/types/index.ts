@@ -25,7 +25,14 @@ export interface EmployeePublic {
   status: "active" | "on_leave" | "offboarded";
   notice_period_days: number | null;
   conversion_status: "not_applicable" | "pending" | "approved" | "rejected";
-  offboard_reason: "resigned" | "terminated" | null;
+  offboard_reason:
+    | "resignation"
+    | "termination"
+    | "contract_end"
+    | "retirement"
+    | "abandonment"
+    | "other"
+    | null;
   offboarded_at: string | null;
 }
 
@@ -76,6 +83,26 @@ export interface LoginResponse {
     token_type: string;
   };
 }
+
+export type HRDocumentType =
+  | "pan_card"
+  | "aadhaar_card"
+  | "resume"
+  | "passport"
+  | "photograph"
+  | "address_proof"
+  | "bank_proof"
+  | "educational_certificate"
+  | "class_10_certificate"
+  | "class_12_certificate"
+  | "graduation_certificate"
+  | "employment_proof"
+  | "joining_letter"
+  | "offer_letter"
+  | "appraisal_letter"
+  | "relieving_letter"
+  | "experience_letter"
+  | "other"
 
 export type DocumentStatus = "pending_upload" | "submitted" | "verified" | "rejected" | "expired";
 
@@ -342,7 +369,14 @@ export interface RecentDeparture {
   full_name: string;
   designation: string | null;
   department: string | null;
-  offboard_reason: "resigned" | "terminated" | null;
+  offboard_reason:
+    | "resignation"
+    | "termination"
+    | "contract_end"
+    | "retirement"
+    | "abandonment"
+    | "other"
+    | null;
   offboarded_at: string | null;
 }
 
@@ -384,10 +418,12 @@ export interface DashboardSummary {
   pending_document_verifications: number;
   leaves_today: number;
   total_separated: number;
+
   employees_by_department: DepartmentBreakdown[];
   headcount_trend: HeadcountPoint[];
   recent_joiners: RecentJoiner[];
   recently_separated: RecentDeparture[];
+
   pending_approvals: PendingApprovals;
   policy_updates: PolicyUpdate[];
   upcoming_events: UpcomingEvent[];
@@ -430,4 +466,24 @@ export interface Holiday {
   name: string;
   date: string;
   is_optional: boolean;
+}
+
+
+export interface EmployeeProject {
+  id: string;
+  employee_id: string;
+  project_name: string;
+  project_code: string | null;
+  client_name: string | null;
+  role: string | null;
+  project_manager: string | null;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  allocation_percentage: number;
+  technologies: string | null;
+  description: string | null;
+  responsibilities: string | null;
+  achievements: string | null;
+  remarks: string | null;
 }

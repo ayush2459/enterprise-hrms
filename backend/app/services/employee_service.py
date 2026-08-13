@@ -22,7 +22,7 @@ from app.schemas.employee import (
     EmployeeReadPublic,
     EmployeeStats,
     EmployeeUpdate,
-    SeparatedEmployee,
+    OffboardedEmployee,
 )
 from app.services.audit_service import AuditService
 from app.utils.password_generator import generate_temp_password
@@ -58,19 +58,19 @@ class EmployeeService:
         employees = await self.repo.list_all(skip, limit, include_separated=include_separated)
         return [EmployeeReadPublic.model_validate(e) for e in employees]
 
-    async def list_separated(
+    async def list_offboarded(
         self, skip: int = 0, limit: int = 50
-    ) -> list["SeparatedEmployee"]:
-        employees = await self.repo.list_separated(limit)
+    ) -> list["OffboardedEmployee"]:
+        employees = await self.repo.list_offboarded(limit)
         return [
-            SeparatedEmployee(
+            OffboardedEmployee(
                 id=e.id,
                 full_name=e.full_name,
                 designation=e.designation,
                 department=e.department,
                 status=e.status,
-                separation_date=e.offboarded_at,
-                separation_reason=e.offboard_reason.value if e.offboard_reason else None,
+                offboarded_at=e.offboarded_at,
+                offboard_reason=e.offboard_reason.value if e.offboard_reason else None,
             )
             for e in employees[skip:]
         ]
@@ -231,16 +231,21 @@ class EmployeeService:
         )
         return employee
 
-    async def offboard_employee(self, employee: Employee, reason: OffboardReason, requester: User) -> Employee:
-        """Mark an employee as resigned/terminated. The record is kept (not
-        deleted) so a 'who left' view stays possible, but status flips to
-        OFFBOARDED so they drop out of active directory lists, dashboard
-        headcounts, and the org chart. HR/System Admin only — this isn't a
-        manager-level action."""
+    async def offboard_employee(
+        self,
+        employee: Employee,
+        reason: OffboardReason,
+        requester: User,
+    ) -> Employee:
+        """Move an employee into the canonical OFFBOARDED state."""
+
         if requester.role not in FULL_ACCESS_ROLES:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only HR Admin, HR Executive, or System Admin can offboard an employee.",
+                detail=(
+                    "Only HR Admin, HR Executive, or System Admin "
+                    "can offboard an employee."
+                ),
             )
 
         if employee.status == EmployeeStatus.OFFBOARDED:
@@ -250,19 +255,96 @@ class EmployeeService:
             )
 
         employee.status = EmployeeStatus.OFFBOARDED
-        employee.offboard_reason = reason
+
+        # Map API reasons ("resigned"/"terminated") to the PostgreSQL
+        # offboard_reason_enum values ("RESIGNATION"/"TERMINATION").
+        if isinstance(reason, str):
+            reason_value = reason.lower()
+        else:
+            reason_value = reason.value.lower()
+
+        reason_map = {
+            "resigned": OffboardReason.RESIGNATION,
+            "resignation": OffboardReason.RESIGNATION,
+            "terminated": OffboardReason.TERMINATION,
+            "termination": OffboardReason.TERMINATION,
+            "contract_end": OffboardReason.CONTRACT_END,
+            "retirement": OffboardReason.RETIREMENT,
+            "abandonment": OffboardReason.ABANDONMENT,
+            "other": OffboardReason.OTHER,
+        }
+
+        mapped_reason = reason_map.get(reason_value)
+
+        if mapped_reason is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported offboarding reason: {reason_value}",
+            )
+
+        employee.offboard_reason = mapped_reason
         employee.offboarded_at = date.today()
 
-        # Anyone who directly reported to this person no longer has a
-        # manager on record — leave that for HR to reassign explicitly
-        # rather than silently reparenting them to someone else.
+        # Remove manager relationships from direct reports.
         reports = await self.repo.list_direct_reports(employee.id)
+
         for report in reports:
             report.reporting_manager_id = None
-            await self.repo.save(report)
+
+        # Disable the employee's login.
+        employee_user = await self.users.get_by_id(employee.user_id)
+        if employee_user is not None:
+            employee_user.is_active = False
 
         await self.repo.save(employee)
+
         await self.audit.log(
-            requester.id, "employee_offboard", "employee", str(employee.id), detail=reason.value
+            requester.id,
+            "employee_offboard",
+            "employee",
+            str(employee.id),
+            detail=reason.value,
         )
+
+        return employee
+
+    async def reactivate_employee(
+        self,
+        employee: Employee,
+        requester: User,
+    ) -> Employee:
+        """Restore an offboarded employee to the active roster."""
+
+        if requester.role not in FULL_ACCESS_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Only HR Admin, HR Executive, or System Admin "
+                    "can reactivate an employee."
+                ),
+            )
+
+        if employee.status != EmployeeStatus.OFFBOARDED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This employee is not offboarded.",
+            )
+
+        employee.status = EmployeeStatus.ACTIVE
+        employee.offboard_reason = None
+        employee.offboarded_at = None
+
+        employee_user = await self.users.get_by_id(employee.user_id)
+        if employee_user is not None:
+            employee_user.is_active = True
+
+        await self.repo.save(employee)
+
+        await self.audit.log(
+            requester.id,
+            "employee_reactivate",
+            "employee",
+            str(employee.id),
+        )
+
         return employee
