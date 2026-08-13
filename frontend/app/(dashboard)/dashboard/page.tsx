@@ -15,16 +15,30 @@ import {
   UserRoundCheck,
   BriefcaseBusiness,
   CircleCheck,
+  Plus,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Cake,
+  PartyPopper,
+  CalendarDays as EventCalendar,
 } from "lucide-react";
 
 import { Topbar } from "@/components/layout/Topbar";
 import { dashboardService } from "@/services/dashboard.service";
 import { holidayService } from "@/services/holiday.service";
-import type { DashboardSummary, Holiday } from "@/types";
+import { eventService } from "@/services/event.service";
+import { AddEventModal } from "@/components/dashboard/AddEventModal";
+import { EditEventModal } from "@/components/dashboard/EditEventModal";
+import type { DashboardSummary, Holiday, CompanyEvent } from "@/types";
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [companyEvents, setCompanyEvents] = useState<CompanyEvent[]>([]);
+  const [showAddEventModal, setShowAddEventModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CompanyEvent | null>(null);
+  const [eventMenu, setEventMenu] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -33,13 +47,15 @@ export default function DashboardPage() {
       setLoading(true);
       setError("");
 
-      const [summary, holidayData] = await Promise.all([
+      const [summary, holidayData, eventData] = await Promise.all([
         dashboardService.getSummary(),
         holidayService.listForYear(new Date().getFullYear()),
+        eventService.listUpcoming(),
       ]);
 
       setData(summary);
       setHolidays(holidayData);
+      setCompanyEvents(eventData);
     } catch (err) {
       console.error("Dashboard loading failed:", err);
       setError("Unable to load live dashboard data.");
@@ -646,6 +662,226 @@ export default function DashboardPage() {
           </section>
 
         </div>
+
+
+        {/* UPCOMING EVENTS */}
+
+        <section className="mt-6 rounded-xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.035)]">
+
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">
+                Upcoming Events
+              </h3>
+
+              <p className="mt-0.5 text-[10px] text-slate-400">
+                Birthdays, work anniversaries and company events
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAddEventModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-[10px] font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            >
+              <Plus size={13} />
+              Add Event
+            </button>
+
+          </div>
+
+          <div className="divide-y divide-slate-100">
+
+            {loading ? (
+              <div className="px-5 py-8 text-center text-xs text-slate-400">
+                Loading upcoming events...
+              </div>
+            ) : !data?.upcoming_events?.length ? (
+              <div className="px-5 py-8 text-center">
+                <EventCalendar className="mx-auto text-slate-300" size={28} />
+                <p className="mt-2 text-xs font-semibold text-slate-500">
+                  No upcoming events
+                </p>
+                <p className="mt-1 text-[10px] text-slate-400">
+                  Add a company event to get started.
+                </p>
+              </div>
+            ) : (
+              data.upcoming_events.slice(0, 10).map((event, index) => {
+
+                const companyEvent =
+                  event.event_type === "company_event"
+                    ? companyEvents.find(
+                        (item) =>
+                          item.title === event.full_name &&
+                          item.event_date === event.event_date &&
+                          item.category === event.category
+                      )
+                    : null;
+
+                const isBirthday = event.event_type === "birthday";
+                const isAnniversary = event.event_type === "work_anniversary";
+
+                return (
+                  <div
+                    key={`${event.event_type}-${event.employee_id ?? event.full_name}-${event.event_date}-${index}`}
+                    className="group flex items-center gap-4 px-5 py-4 transition hover:bg-slate-50"
+                  >
+
+                    <div
+                      className={[
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                        isBirthday
+                          ? "bg-pink-50 text-pink-500"
+                          : isAnniversary
+                            ? "bg-amber-50 text-amber-500"
+                            : "bg-blue-50 text-blue-600",
+                      ].join(" ")}
+                    >
+                      {isBirthday ? (
+                        <Cake size={18} />
+                      ) : isAnniversary ? (
+                        <PartyPopper size={18} />
+                      ) : (
+                        <EventCalendar size={18} />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+
+                      <div className="flex items-center gap-2">
+
+                        <p className="truncate text-xs font-bold text-slate-800">
+                          {event.full_name}
+                        </p>
+
+                        <span
+                          className={[
+                            "rounded-full px-2 py-0.5 text-[9px] font-semibold",
+                            isBirthday
+                              ? "bg-pink-50 text-pink-600"
+                              : isAnniversary
+                                ? "bg-amber-50 text-amber-600"
+                                : "bg-blue-50 text-blue-600",
+                          ].join(" ")}
+                        >
+                          {isBirthday
+                            ? "Birthday"
+                            : isAnniversary
+                              ? "Work Anniversary"
+                              : event.category || "Company Event"}
+                        </span>
+
+                      </div>
+
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        {new Date(`${event.event_date}T00:00:00`).toLocaleDateString(
+                          "en-IN",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          }
+                        )}
+                      </p>
+
+                    </div>
+
+                    {companyEvent && (
+                      <div className="relative">
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEventMenu(
+                              eventMenu === companyEvent.id
+                                ? null
+                                : companyEvent.id
+                            )
+                          }
+                          className="rounded-lg p-2 text-slate-400 opacity-0 transition hover:bg-slate-100 hover:text-slate-700 group-hover:opacity-100"
+                          aria-label="Event actions"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+
+                        {eventMenu === companyEvent.id && (
+                          <div className="absolute right-0 top-10 z-20 w-32 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl">
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingEvent(companyEvent);
+                                setEventMenu(null);
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] font-medium text-slate-700 hover:bg-slate-50"
+                            >
+                              <Pencil size={13} />
+                              Edit
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                setEventMenu(null);
+
+                                if (
+                                  !window.confirm(
+                                    `Delete "${companyEvent.title}"?`
+                                  )
+                                ) {
+                                  return;
+                                }
+
+                                try {
+                                  await eventService.delete(companyEvent.id);
+                                  await loadDashboard();
+                                } catch (err) {
+                                  console.error(
+                                    "Failed to delete event:",
+                                    err
+                                  );
+                                  setError(
+                                    "Unable to delete the event."
+                                  );
+                                }
+                              }}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] font-medium text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 size={13} />
+                              Delete
+                            </button>
+
+                          </div>
+                        )}
+
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })
+            )}
+
+          </div>
+
+        </section>
+
+        {showAddEventModal && (
+          <AddEventModal
+            onClose={() => setShowAddEventModal(false)}
+            onAdded={loadDashboard}
+          />
+        )}
+
+        {editingEvent && (
+          <EditEventModal
+            event={editingEvent}
+            onClose={() => setEditingEvent(null)}
+            onUpdated={loadDashboard}
+          />
+        )}
 
         {/* SEPARATED EMPLOYEES */}
 

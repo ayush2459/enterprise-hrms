@@ -15,4 +15,19 @@ export const eventService = {
     });
     return data;
   },
+
+  async update(
+    eventId: string,
+    payload: Partial<Pick<CompanyEvent, "title" | "event_date" | "category">>
+  ) {
+    const { data } = await api.patch<CompanyEvent>(
+      `/events/${eventId}`,
+      payload
+    );
+    return data;
+  },
+
+  async delete(eventId: string) {
+    await api.delete(`/events/${eventId}`);
+  },
 };
