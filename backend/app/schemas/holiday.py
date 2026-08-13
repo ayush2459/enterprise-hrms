@@ -16,3 +16,9 @@ class HolidayRead(BaseModel):
     name: str
     date: date
     is_optional: bool
+
+
+class HolidayUpdate(BaseModel):
+    name: str
+    date: date
+    is_optional: bool = False

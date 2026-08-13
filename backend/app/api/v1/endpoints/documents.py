@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.document import DocumentRead, DocumentVerifyRequest
+from app.schemas.document import DocumentRead, DocumentVerifyRequest, HRDocumentType
 from app.services.document_service import DocumentService
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -27,7 +27,7 @@ async def list_employee_documents(
 @router.post("/employee/{employee_id}", response_model=DocumentRead, status_code=201)
 async def upload_document(
     employee_id: UUID,
-    document_type: str = Form(...),
+    document_type: HRDocumentType = Form(...),
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

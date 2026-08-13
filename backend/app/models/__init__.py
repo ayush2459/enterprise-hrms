@@ -47,3 +47,5 @@ __all__ = [
     "Asset",
     "Holiday",
 ]
+
+from app.models.project import EmployeeProject

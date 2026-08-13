@@ -1,0 +1,1696 @@
+
+
+
+/* ============================================================
+   HRHUB MODERN HRMS DESIGN SYSTEM
+   Keka-inspired enterprise HR experience
+   ============================================================ */
+
+:root {
+  --hrhub-primary: #2563eb;
+  --hrhub-primary-dark: #1d4ed8;
+  --hrhub-primary-soft: #eff6ff;
+  --hrhub-sidebar: #172554;
+  --hrhub-sidebar-hover: #1e3a8a;
+  --hrhub-page: #f6f8fc;
+  --hrhub-card: #ffffff;
+  --hrhub-border: #e5e7eb;
+  --hrhub-text: #172033;
+  --hrhub-muted: #6b7280;
+  --hrhub-success: #16a34a;
+  --hrhub-warning: #d97706;
+  --hrhub-danger: #dc2626;
+}
+
+/* Page background */
+
+body {
+  background: var(--hrhub-page);
+  color: var(--hrhub-text);
+}
+
+/* Smooth enterprise UI */
+
+button,
+a,
+input,
+select,
+textarea {
+  transition:
+    background-color .18s ease,
+    border-color .18s ease,
+    color .18s ease,
+    box-shadow .18s ease,
+    transform .18s ease;
+}
+
+/* Cards */
+
+.hrhub-card {
+  background: var(--hrhub-card);
+  border: 1px solid var(--hrhub-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+}
+
+.hrhub-card:hover {
+  box-shadow: 0 5px 18px rgba(15, 23, 42, .07);
+}
+
+/* Employee 360 header */
+
+.hrhub-profile-header {
+  background:
+    linear-gradient(
+      135deg,
+      #eff6ff 0%,
+      #ffffff 65%
+    );
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+}
+
+/* Status */
+
+.hrhub-status-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hrhub-status-active::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+/* Section headings */
+
+.hrhub-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--hrhub-text);
+}
+
+.hrhub-section-subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--hrhub-muted);
+}
+
+/* Employee navigation */
+
+.hrhub-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--hrhub-border);
+  scrollbar-width: none;
+}
+
+.hrhub-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.hrhub-tab {
+  position: relative;
+  padding: 11px 15px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.hrhub-tab:hover {
+  color: var(--hrhub-primary);
+  background: var(--hrhub-primary-soft);
+}
+
+.hrhub-tab-active {
+  color: var(--hrhub-primary);
+  font-weight: 600;
+}
+
+.hrhub-tab-active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--hrhub-primary);
+}
+
+/* Information fields */
+
+.hrhub-field-label {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .035em;
+}
+
+.hrhub-field-value {
+  margin-top: 4px;
+  color: var(--hrhub-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Quick action */
+
+.hrhub-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 9px;
+  padding: 8px 13px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hrhub-action-primary {
+  background: var(--hrhub-primary);
+  color: white;
+}
+
+.hrhub-action-primary:hover {
+  background: var(--hrhub-primary-dark);
+  transform: translateY(-1px);
+}
+
+/* Leave progress */
+
+.hrhub-progress {
+  height: 7px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.hrhub-progress > div {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--hrhub-primary);
+}
+
+/* Team nodes */
+
+.hrhub-team-node {
+  border: 1px solid var(--hrhub-border);
+  border-radius: 12px;
+  background: white;
+  padding: 12px;
+  transition: .18s ease;
+}
+
+.hrhub-team-node:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, .08);
+}
+
+/* Holiday */
+
+.hrhub-holiday {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hrhub-holiday:last-child {
+  border-bottom: 0;
+}
+
+.hrhub-holiday-date {
+  display: flex;
+  min-width: 46px;
+  height: 46px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--hrhub-primary-soft);
+  color: var(--hrhub-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Directory */
+
+.hrhub-directory-row {
+  background: white;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hrhub-directory-row:hover {
+  background: #f8fafc;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .hrhub-profile-header {
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hrhub-tabs {
+    margin-inline: -4px;
+  }
+
+  .hrhub-tab {
+    padding-inline: 10px;
+  }
+}
+
+/* ============================================================
+   END HRHUB DESIGN SYSTEM
+   ============================================================ */
+
+
+/* =========================================================
+   HRHUB PREMIUM HRMS UI
+   ========================================================= */
+
+:root {
+  --hr-primary: #2563eb;
+  --hr-primary-dark: #1d4ed8;
+  --hr-primary-soft: #eff6ff;
+  --hr-page: #f5f7fb;
+  --hr-card: #ffffff;
+  --hr-border: #e5e7eb;
+  --hr-text: #172033;
+  --hr-muted: #64748b;
+  --hr-success: #16a34a;
+  --hr-warning: #d97706;
+  --hr-danger: #dc2626;
+}
+
+body {
+  background: var(--hr-page);
+  color: var(--hr-text);
+}
+
+/* premium cards */
+
+.hr-premium-card {
+  background: #fff;
+  border: 1px solid var(--hr-border);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(15,23,42,.035);
+  transition: all .2s ease;
+}
+
+.hr-premium-card:hover {
+  box-shadow: 0 8px 24px rgba(15,23,42,.07);
+  border-color: #dbe3f0;
+}
+
+/* employee hero */
+
+.hr-employee-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(59,130,246,.12), transparent 30%),
+    linear-gradient(135deg,#eff6ff 0%,#ffffff 72%);
+}
+
+.hr-employee-avatar {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:64px;
+  height:64px;
+  border-radius:16px;
+  background:linear-gradient(135deg,#2563eb,#4f46e5);
+  color:white;
+  font-size:22px;
+  font-weight:700;
+  box-shadow:0 8px 20px rgba(37,99,235,.2);
+}
+
+.hr-active {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:#ecfdf5;
+  color:#15803d;
+  font-size:11px;
+  font-weight:700;
+}
+
+.hr-active-dot {
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#22c55e;
+}
+
+/* tabs */
+
+.hr-tabs {
+  display:flex;
+  gap:3px;
+  overflow-x:auto;
+  border-bottom:1px solid var(--hr-border);
+  scrollbar-width:none;
+}
+
+.hr-tabs::-webkit-scrollbar {
+  display:none;
+}
+
+.hr-tab {
+  position:relative;
+  padding:12px 15px;
+  color:#64748b;
+  font-size:13px;
+  font-weight:500;
+  white-space:nowrap;
+  cursor:pointer;
+}
+
+.hr-tab:hover {
+  color:#2563eb;
+  background:#eff6ff;
+}
+
+.hr-tab.active {
+  color:#2563eb;
+  font-weight:600;
+}
+
+.hr-tab.active:after {
+  content:"";
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:-1px;
+  height:2px;
+  border-radius:4px;
+  background:#2563eb;
+}
+
+/* stat cards */
+
+.hr-stat {
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:16px;
+  transition:.2s ease;
+}
+
+.hr-stat:hover {
+  transform:translateY(-2px);
+  box-shadow:0 7px 20px rgba(15,23,42,.06);
+}
+
+.hr-stat-label {
+  color:#94a3b8;
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.hr-stat-value {
+  margin-top:5px;
+  color:#172033;
+  font-size:21px;
+  font-weight:700;
+}
+
+.hr-stat-meta {
+  margin-top:3px;
+  color:#64748b;
+  font-size:11px;
+}
+
+/* information */
+
+.hr-field-label {
+  color:#94a3b8;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.hr-field-value {
+  margin-top:4px;
+  color:#172033;
+  font-size:13px;
+  font-weight:500;
+}
+
+/* leave */
+
+.hr-leave-card {
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:14px;
+  background:#fff;
+}
+
+.hr-progress {
+  height:6px;
+  overflow:hidden;
+  border-radius:99px;
+  background:#e5e7eb;
+}
+
+.hr-progress > div {
+  height:100%;
+  border-radius:inherit;
+  background:#2563eb;
+}
+
+/* holidays */
+
+.hr-holiday {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:11px 0;
+  border-bottom:1px solid #f1f5f9;
+}
+
+.hr-holiday:last-child {
+  border-bottom:0;
+}
+
+.hr-holiday-date {
+  width:46px;
+  height:46px;
+  flex:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  background:#eff6ff;
+  color:#2563eb;
+}
+
+.hr-holiday-day {
+  font-size:16px;
+  font-weight:700;
+  line-height:16px;
+}
+
+.hr-holiday-month {
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+}
+
+/* team */
+
+.hr-team-node {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px;
+  border:1px solid #e5e7eb;
+  border-radius:11px;
+  background:#fff;
+  transition:.2s ease;
+}
+
+.hr-team-node:hover {
+  border-color:#bfdbfe;
+  box-shadow:0 5px 16px rgba(37,99,235,.08);
+}
+
+/* edit buttons */
+
+.hr-edit {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  color:#2563eb;
+  font-size:12px;
+  font-weight:600;
+}
+
+.hr-edit:hover {
+  text-decoration:underline;
+}
+
+/* responsive */
+
+@media(max-width:768px) {
+  .hr-employee-hero {
+    border-radius:12px;
+  }
+
+  .hr-tabs {
+    margin-inline:-8px;
+  }
+
+  .hr-tab {
+    padding-inline:10px;
+  }
+}
+
+/* =========================================================
+   END HRHUB PREMIUM UI
+   ========================================================= */
+
+
+/* ============================================================
+   HRHUB — COMPLETE ENTERPRISE HRMS UI
+   Keka-inspired enterprise design language
+   ============================================================ */
+
+:root {
+  --hr-primary: #2463eb;
+  --hr-primary-dark: #1749b5;
+  --hr-primary-light: #eef4ff;
+
+  --hr-bg: #f5f7fb;
+  --hr-surface: #ffffff;
+  --hr-surface-2: #f8fafc;
+
+  --hr-border: #e5e9f0;
+  --hr-border-dark: #d7dde8;
+
+  --hr-text: #172033;
+  --hr-text-2: #475569;
+  --hr-muted: #94a3b8;
+
+  --hr-green: #16a34a;
+  --hr-green-bg: #ecfdf3;
+
+  --hr-orange: #ea8a00;
+  --hr-orange-bg: #fff7e8;
+
+  --hr-red: #dc2626;
+  --hr-red-bg: #fef2f2;
+
+  --hr-purple: #7c3aed;
+  --hr-purple-bg: #f5f3ff;
+
+  --hr-radius: 12px;
+  --hr-radius-lg: 16px;
+
+  --hr-shadow:
+    0 1px 2px rgba(15,23,42,.03),
+    0 5px 18px rgba(15,23,42,.04);
+}
+
+/* ============================================================
+   GLOBAL
+   ============================================================ */
+
+html {
+  background: var(--hr-bg);
+}
+
+body {
+  margin: 0;
+  background: var(--hr-bg) !important;
+  color: var(--hr-text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button {
+  transition:
+    background .16s ease,
+    border-color .16s ease,
+    color .16s ease,
+    box-shadow .16s ease,
+    transform .16s ease;
+}
+
+/* ============================================================
+   DASHBOARD SHELL
+   ============================================================ */
+
+main {
+  background: var(--hr-bg) !important;
+}
+
+/* Main content spacing */
+
+main > div {
+  max-width: 100% !important;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+
+/* Dark/navy Keka-inspired navigation */
+
+aside {
+  background:
+    linear-gradient(
+      180deg,
+      #172554 0%,
+      #1e3a8a 100%
+    ) !important;
+
+  border-right: 0 !important;
+  box-shadow:
+    4px 0 18px rgba(15,23,42,.08);
+}
+
+/* Sidebar text */
+
+aside a {
+  color: rgba(255,255,255,.72) !important;
+  border-radius: 9px !important;
+  margin: 2px 8px !important;
+}
+
+aside a:hover {
+  background: rgba(255,255,255,.10) !important;
+  color: #fff !important;
+}
+
+aside a[class*="bg-"],
+aside a[aria-current="page"] {
+  background: rgba(255,255,255,.15) !important;
+  color: #fff !important;
+  box-shadow:
+    inset 3px 0 0 #fff;
+}
+
+/* Sidebar section labels */
+
+aside p,
+aside span {
+  letter-spacing: .01em;
+}
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+
+header {
+  background: rgba(255,255,255,.96) !important;
+  border-bottom: 1px solid var(--hr-border) !important;
+  box-shadow: 0 1px 5px rgba(15,23,42,.025);
+}
+
+/* ============================================================
+   PAGE HEADINGS
+   ============================================================ */
+
+h1 {
+  color: var(--hr-text);
+  letter-spacing: -.025em;
+}
+
+h2,
+h3 {
+  color: var(--hr-text);
+  letter-spacing: -.015em;
+}
+
+/* ============================================================
+   CARDS
+   ============================================================ */
+
+[class*="bg-white"][class*="rounded"],
+[class*="bg-surface"][class*="rounded"] {
+  border-color: var(--hr-border) !important;
+  box-shadow: var(--hr-shadow);
+}
+
+[class*="rounded-xl"],
+[class*="rounded-2xl"] {
+  border-color: var(--hr-border);
+}
+
+/* Hover only on actual cards */
+
+div[class*="shadow-sm"] {
+  transition:
+    box-shadow .18s ease,
+    border-color .18s ease,
+    transform .18s ease;
+}
+
+div[class*="shadow-sm"]:hover {
+  box-shadow:
+    0 8px 25px rgba(15,23,42,.06);
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+button {
+  border-radius: 8px;
+}
+
+button.bg-brand,
+button.bg-blue-600,
+button[class*="bg-primary"] {
+  background: var(--hr-primary) !important;
+  color: white !important;
+  border-color: var(--hr-primary) !important;
+  box-shadow:
+    0 3px 8px rgba(36,99,235,.16);
+}
+
+button.bg-brand:hover,
+button.bg-blue-600:hover,
+button[class*="bg-primary"]:hover {
+  background: var(--hr-primary-dark) !important;
+  transform: translateY(-1px);
+}
+
+/* Secondary buttons */
+
+button[class*="border"] {
+  border-color: var(--hr-border-dark);
+}
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+
+input,
+select,
+textarea {
+  border-color: var(--hr-border) !important;
+  border-radius: 8px !important;
+  background: white;
+  color: var(--hr-text);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #8eb3ff !important;
+  outline: none !important;
+  box-shadow:
+    0 0 0 3px rgba(36,99,235,.09) !important;
+}
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+thead {
+  background: #f8fafc !important;
+}
+
+thead th {
+  color: #64748b !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+tbody tr {
+  transition: background .14s ease;
+}
+
+tbody tr:hover {
+  background: #f8fbff !important;
+}
+
+tbody td {
+  border-color: #f0f2f6 !important;
+}
+
+/* ============================================================
+   BADGES / STATUS
+   ============================================================ */
+
+[class*="bg-green"],
+[class*="bg-emerald"] {
+  color: #15803d;
+}
+
+[class*="bg-red"] {
+  color: #b91c1c;
+}
+
+[class*="bg-yellow"],
+[class*="bg-amber"] {
+  color: #a16207;
+}
+
+/* ============================================================
+   DASHBOARD STAT CARDS
+   ============================================================ */
+
+.hr-dashboard-stat {
+  position: relative;
+  overflow: hidden;
+  min-height: 120px;
+  border: 1px solid var(--hr-border);
+  border-radius: var(--hr-radius-lg);
+  background: white;
+  padding: 18px;
+  box-shadow: var(--hr-shadow);
+  transition: .2s ease;
+}
+
+.hr-dashboard-stat:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 28px rgba(15,23,42,.07);
+}
+
+.hr-dashboard-stat-icon {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--hr-primary-light);
+  color: var(--hr-primary);
+}
+
+.hr-dashboard-stat-value {
+  margin-top: 12px;
+  font-size: 25px;
+  font-weight: 750;
+  color: var(--hr-text);
+}
+
+.hr-dashboard-stat-label {
+  margin-top: 2px;
+  color: var(--hr-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   DASHBOARD WIDGETS
+   ============================================================ */
+
+.hr-widget {
+  border: 1px solid var(--hr-border);
+  border-radius: var(--hr-radius-lg);
+  background: white;
+  box-shadow: var(--hr-shadow);
+}
+
+.hr-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 17px 18px;
+  border-bottom: 1px solid #eef1f5;
+}
+
+.hr-widget-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hr-widget-subtitle {
+  margin-top: 3px;
+  color: var(--hr-muted);
+  font-size: 11px;
+}
+
+/* ============================================================
+   EMPLOYEE DIRECTORY
+   ============================================================ */
+
+.employee-directory {
+  overflow: hidden;
+  border: 1px solid var(--hr-border);
+  border-radius: var(--hr-radius-lg);
+  background: white;
+  box-shadow: var(--hr-shadow);
+}
+
+.employee-directory tbody tr {
+  cursor: pointer;
+}
+
+.employee-directory tbody tr:hover {
+  background: #f7faff !important;
+}
+
+/* Employee avatars */
+
+.hr-avatar {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #e8f0ff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ============================================================
+   EMPLOYEE 360
+   ============================================================ */
+
+.employee-360-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dbe5f5;
+  border-radius: 18px;
+  background:
+    radial-gradient(
+      circle at 90% 15%,
+      rgba(37,99,235,.13),
+      transparent 30%
+    ),
+    linear-gradient(
+      135deg,
+      #eef4ff 0%,
+      #ffffff 72%
+    );
+  box-shadow: var(--hr-shadow);
+}
+
+.employee-360-avatar {
+  display: flex;
+  width: 68px;
+  height: 68px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 17px;
+  background: linear-gradient(135deg,#2563eb,#4f46e5);
+  color: white;
+  font-size: 22px;
+  font-weight: 700;
+  box-shadow: 0 8px 20px rgba(37,99,235,.22);
+}
+
+.employee-360-name {
+  font-size: 23px;
+  font-weight: 750;
+}
+
+.employee-360-designation {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.employee-360-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.employee-360-meta span {
+  border: 1px solid #e1e8f2;
+  border-radius: 7px;
+  background: rgba(255,255,255,.8);
+  padding: 5px 8px;
+  color: #475569;
+  font-size: 10px;
+}
+
+/* ============================================================
+   EMPLOYEE TABS
+   ============================================================ */
+
+.employee-360-tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  margin: 18px 0;
+  padding: 4px;
+  border: 1px solid var(--hr-border);
+  border-radius: 10px;
+  background: white;
+}
+
+.employee-360-tabs button {
+  padding: 9px 14px;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.employee-360-tabs button:hover {
+  background: var(--hr-primary-light);
+  color: var(--hr-primary);
+}
+
+/* ============================================================
+   HOLIDAY CALENDAR
+   ============================================================ */
+
+.hr-holiday {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hr-holiday:last-child {
+  border-bottom: 0;
+}
+
+.hr-holiday-date {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+/* ============================================================
+   TEAM TREE
+   ============================================================ */
+
+.hr-team-node {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  border: 1px solid #e5e9f0;
+  border-radius: 11px;
+  background: white;
+  padding: 11px;
+  transition: .18s ease;
+}
+
+.hr-team-node:hover {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+  transform: translateX(2px);
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+
+[role="dialog"] {
+  border-radius: 16px !important;
+  border-color: var(--hr-border) !important;
+  box-shadow:
+    0 25px 70px rgba(15,23,42,.18) !important;
+}
+
+/* ============================================================
+   SCROLLBARS
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media(max-width:768px) {
+
+  .employee-360-name {
+    font-size: 19px;
+  }
+
+  .employee-360-hero {
+    border-radius: 13px;
+  }
+
+  .employee-360-tabs {
+    margin-inline: -4px;
+  }
+
+  table {
+    min-width: 720px;
+  }
+
+  main {
+    overflow-x: hidden;
+  }
+}
+
+/* ============================================================
+   END HRHUB COMPLETE UI
+   ============================================================ */
+
+
+/* ============================================================
+   HRHUB — FULL ENTERPRISE UX LAYER
+   ============================================================ */
+
+.hr-page {
+  min-height: calc(100vh - 72px);
+  padding: 24px;
+}
+
+.hr-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.hr-page-title {
+  font-size: 23px;
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -.025em;
+  color: #172033;
+}
+
+.hr-page-subtitle {
+  margin-top: 5px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.hr-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hr-card {
+  border: 1px solid #e5e9f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow:
+    0 1px 2px rgba(15,23,42,.025),
+    0 6px 20px rgba(15,23,42,.035);
+}
+
+.hr-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px 18px;
+  border-bottom: 1px solid #eef1f5;
+}
+
+.hr-card-title {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hr-card-description {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.hr-card-body {
+  padding: 18px;
+}
+
+/* STAT GRID */
+
+.hr-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 14px;
+}
+
+.hr-stat {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e5e9f0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 17px;
+  box-shadow:
+    0 1px 2px rgba(15,23,42,.025),
+    0 6px 20px rgba(15,23,42,.035);
+}
+
+.hr-stat:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 28px rgba(15,23,42,.065);
+}
+
+.hr-stat-icon {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #eef4ff;
+  color: #2563eb;
+}
+
+.hr-stat-value {
+  margin-top: 13px;
+  color: #172033;
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 750;
+}
+
+.hr-stat-label {
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.hr-stat-change {
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.hr-stat-change.up {
+  color: #16a34a;
+}
+
+.hr-stat-change.down {
+  color: #dc2626;
+}
+
+/* DASHBOARD GRID */
+
+.hr-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1.65fr) minmax(300px,1fr);
+  gap: 16px;
+}
+
+.hr-dashboard-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 16px;
+}
+
+/* TOOLBAR */
+
+.hr-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.hr-toolbar-left,
+.hr-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* SEARCH */
+
+.hr-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 220px;
+  border: 1px solid #e5e9f0;
+  border-radius: 9px;
+  background: #fff;
+  padding: 8px 11px;
+}
+
+.hr-search input {
+  width: 100%;
+  border: 0 !important;
+  outline: none !important;
+  background: transparent;
+  font-size: 11px;
+  box-shadow: none !important;
+}
+
+/* FILTER */
+
+.hr-filter {
+  height: 36px;
+  border: 1px solid #e5e9f0;
+  border-radius: 8px;
+  background: white;
+  padding: 0 10px;
+  color: #475569;
+  font-size: 11px;
+}
+
+/* TABLE */
+
+.hr-table {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #e5e9f0;
+  border-radius: 14px;
+  background: white;
+}
+
+.hr-table table {
+  width: 100%;
+}
+
+.hr-table thead {
+  background: #f8fafc !important;
+}
+
+.hr-table th {
+  padding: 11px 14px !important;
+  color: #64748b !important;
+  font-size: 9px !important;
+  font-weight: 750 !important;
+  text-transform: uppercase;
+  letter-spacing: .055em;
+}
+
+.hr-table td {
+  padding: 13px 14px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  font-size: 11px;
+}
+
+.hr-table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.hr-table tbody tr:hover {
+  background: #f8fbff !important;
+}
+
+/* STATUS */
+
+.hr-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.hr-status.active,
+.hr-status.approved,
+.hr-status.success {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.hr-status.pending,
+.hr-status.warning {
+  background: #fff7e8;
+  color: #a16207;
+}
+
+.hr-status.inactive,
+.hr-status.rejected,
+.hr-status.danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.hr-status.info {
+  background: #eef4ff;
+  color: #2563eb;
+}
+
+/* EMPTY */
+
+.hr-empty {
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.hr-empty-icon {
+  display: flex;
+  width: 46px;
+  height: 46px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.hr-empty-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.hr-empty-text {
+  margin-top: 4px;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* QUICK ACTIONS */
+
+.hr-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 10px;
+}
+
+.hr-quick-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e5e9f0;
+  border-radius: 11px;
+  background: white;
+  padding: 12px;
+  text-align: left;
+  transition: .18s ease;
+}
+
+.hr-quick-action:hover {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+  transform: translateY(-1px);
+}
+
+.hr-quick-action-icon {
+  display: flex;
+  width: 34px;
+  height: 34px;
+  flex:none;
+  align-items:center;
+  justify-content:center;
+  border-radius:9px;
+  background:#eef4ff;
+  color:#2563eb;
+}
+
+/* TIMELINE */
+
+.hr-timeline {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hr-timeline-item {
+  display: flex;
+  gap: 11px;
+}
+
+.hr-timeline-dot {
+  width: 9px;
+  height: 9px;
+  flex:none;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #2563eb;
+  box-shadow: 0 0 0 4px #eef4ff;
+}
+
+/* CALENDAR */
+
+.hr-calendar {
+  display: grid;
+  grid-template-columns: repeat(7,1fr);
+  gap: 4px;
+}
+
+.hr-calendar-day {
+  min-height: 68px;
+  border: 1px solid #eef1f5;
+  border-radius: 8px;
+  background: #fff;
+  padding: 7px;
+}
+
+.hr-calendar-day:hover {
+  background: #f8fbff;
+  border-color: #dbeafe;
+}
+
+/* ORG TREE */
+
+.hr-org {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.hr-org-node {
+  min-width: 190px;
+  border: 1px solid #dbe5f5;
+  border-radius: 12px;
+  background: white;
+  padding: 13px;
+  box-shadow: 0 4px 15px rgba(15,23,42,.04);
+}
+
+.hr-org-node:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 8px 22px rgba(37,99,235,.08);
+}
+
+/* PROGRESS */
+
+.hr-progress {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf1f6;
+}
+
+.hr-progress > div {
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:1100px) {
+  .hr-stat-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+
+  .hr-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-dashboard-grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-quick-actions {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
+}
+
+@media(max-width:700px) {
+  .hr-page {
+    padding: 14px;
+  }
+
+  .hr-page-header {
+    flex-direction: column;
+  }
+
+  .hr-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hr-toolbar-left,
+  .hr-toolbar-right {
+    width: 100%;
+  }
+
+  .hr-search {
+    width: 100%;
+  }
+
+  .hr-quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .hr-table {
+    overflow-x: auto;
+  }
+
+  .hr-table table {
+    min-width: 720px;
+  }
+}
