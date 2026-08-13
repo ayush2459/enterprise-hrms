@@ -24,6 +24,11 @@ export function EditPersonalDetailsModal({
   const [personalEmail, setPersonalEmail] = useState(existing.personal_email ?? "");
   const [emergencyContact, setEmergencyContact] = useState(existing.emergency_contact ?? "");
   const [address, setAddress] = useState(existing.personal_address ?? "");
+  const [mobileNumber, setMobileNumber] = useState(existing.mobile_number ?? "");
+  const [bankAccountNumber, setBankAccountNumber] = useState(existing.bank_account_number ?? "");
+  const [bankIfsc, setBankIfsc] = useState(existing.bank_ifsc ?? "");
+  const [bankName, setBankName] = useState(existing.bank_name ?? "");
+  const [pfNumber, setPfNumber] = useState(existing.pf_number ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +44,11 @@ export function EditPersonalDetailsModal({
         personal_email: personalEmail || null,
         emergency_contact: emergencyContact || null,
         personal_address: address || null,
+        mobile_number: mobileNumber || null,
+        bank_account_number: bankAccountNumber || null,
+        bank_ifsc: bankIfsc || null,
+        bank_name: bankName || null,
+        pf_number: pfNumber || null,
       } as any);
       onSaved();
       onClose();
@@ -109,6 +119,43 @@ export function EditPersonalDetailsModal({
             value={address}
             onChange={(e) => setAddress(e.target.value)}
           />
+          <Input
+            id="mobile_number"
+            label="Mobile Number"
+            value={mobileNumber}
+            onChange={(e) => setMobileNumber(e.target.value)}
+          />
+          <div className="border-t border-gray-100 pt-4">
+            <p className="mb-3 text-xs font-medium text-gray-500">Banking &amp; PF Details</p>
+            <div className="space-y-3">
+              <Input
+                id="bank_account_number"
+                label="Bank Account Number"
+                value={bankAccountNumber}
+                onChange={(e) => setBankAccountNumber(e.target.value)}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  id="bank_ifsc"
+                  label="IFSC Code"
+                  value={bankIfsc}
+                  onChange={(e) => setBankIfsc(e.target.value)}
+                />
+                <Input
+                  id="bank_name"
+                  label="Bank Name"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                />
+              </div>
+              <Input
+                id="pf_number"
+                label="PF Number"
+                value={pfNumber}
+                onChange={(e) => setPfNumber(e.target.value)}
+              />
+            </div>
+          </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
 

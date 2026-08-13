@@ -53,6 +53,10 @@ class EmployeeStatus(str, enum.Enum):
 SEPARATED_STATUSES = (EmployeeStatus.RESIGNED, EmployeeStatus.TERMINATED)
 
 
+class OffboardReason(str, enum.Enum):
+    RESIGNED = "resigned"
+    TERMINATED = "terminated"
+
 class ConversionStatus(str, enum.Enum):
     """Tracks an intern's request to convert to a full-time employee.
     NOT_APPLICABLE covers everyone who isn't mid-conversion (full-time/

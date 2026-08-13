@@ -14,8 +14,6 @@ export interface User {
   mfa_enabled: boolean;
 }
 
-export type EmployeeStatus = "active" | "on_leave" | "offboarded" | "resigned" | "terminated";
-
 export interface EmployeePublic {
   id: string;
   full_name: string;
@@ -24,11 +22,11 @@ export interface EmployeePublic {
   employment_type: "full_time" | "intern" | "contract";
   date_of_joining: string | null;
   photo_url: string | null;
-  status: EmployeeStatus;
+  status: "active" | "on_leave" | "offboarded";
   notice_period_days: number | null;
   conversion_status: "not_applicable" | "pending" | "approved" | "rejected";
-  separation_date: string | null;
-  separation_reason: string | null;
+  offboard_reason: "resigned" | "terminated" | null;
+  offboarded_at: string | null;
 }
 
 export interface EmployeeFull extends EmployeePublic {
@@ -38,6 +36,11 @@ export interface EmployeeFull extends EmployeePublic {
   blood_group: string | null;
   emergency_contact: string | null;
   personal_email: string | null;
+  mobile_number: string | null;
+  bank_account_number: string | null;
+  bank_ifsc: string | null;
+  bank_name: string | null;
+  pf_number: string | null;
 }
 
 export interface EmployeeCreateInput {
@@ -63,22 +66,6 @@ export interface EmployeeStats {
   active_today: number;
   pending_bgv: number | null;
   policy_acknowledgements_due: number | null;
-}
-
-export interface SeparatedEmployee {
-  id: string;
-  full_name: string;
-  department: string | null;
-  designation: string | null;
-  status: EmployeeStatus;
-  separation_date: string | null;
-  separation_reason: string | null;
-}
-
-export interface OffboardInput {
-  status: "resigned" | "terminated";
-  reason?: string;
-  effective_date?: string;
 }
 
 export interface LoginResponse {
@@ -150,7 +137,7 @@ export interface TeamMember {
   designation: string | null;
   department: string | null;
   official_email: string;
-  status: EmployeeStatus;
+  status: "active" | "on_leave" | "offboarded";
   employment_type: "full_time" | "intern" | "contract";
 }
 
@@ -350,14 +337,13 @@ export interface RecentJoiner {
   date_of_joining: string | null;
 }
 
-export interface SeparatedEmployeeSummary {
+export interface RecentDeparture {
   id: string;
   full_name: string;
   designation: string | null;
   department: string | null;
-  status: EmployeeStatus;
-  separation_date: string | null;
-  separation_reason: string | null;
+  offboard_reason: "resigned" | "terminated" | null;
+  offboarded_at: string | null;
 }
 
 export interface PendingApprovals {
@@ -401,8 +387,47 @@ export interface DashboardSummary {
   employees_by_department: DepartmentBreakdown[];
   headcount_trend: HeadcountPoint[];
   recent_joiners: RecentJoiner[];
-  recently_separated: SeparatedEmployeeSummary[];
+  recently_separated: RecentDeparture[];
   pending_approvals: PendingApprovals;
   policy_updates: PolicyUpdate[];
   upcoming_events: UpcomingEvent[];
+}
+
+export interface FactoryResetResult {
+  message: string;
+  tables_cleared: number;
+  non_admin_users_removed: number;
+}
+
+export interface ImportRowError {
+  row: number;
+  identifier: string;
+  error: string;
+}
+
+export interface EmployeeImportResult {
+  total_rows: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: ImportRowError[];
+}
+
+export interface Asset {
+  id: string;
+  employee_id: string;
+  asset_type: string;
+  asset_name: string;
+  serial_number: string | null;
+  assigned_date: string | null;
+  returned_date: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface Holiday {
+  id: string;
+  name: string;
+  date: string;
+  is_optional: boolean;
 }

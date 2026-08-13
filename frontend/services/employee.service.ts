@@ -3,10 +3,9 @@ import type {
   EmployeeCreateInput,
   EmployeeCreateResult,
   EmployeeFull,
+  EmployeeImportResult,
   EmployeePublic,
   EmployeeStats,
-  OffboardInput,
-  SeparatedEmployee,
 } from "@/types";
 
 // No trailing slash on the collection routes ("/employees", not
@@ -15,16 +14,16 @@ import type {
 // one caused a 307 redirect that silently dropped POST bodies. Backend
 // routes were changed to match (see employees.py).
 export const employeeService = {
-  async list(skip = 0, limit = 50) {
+  async list(skip = 0, limit = 50, includeOffboarded = false) {
     const { data } = await api.get<EmployeePublic[]>("/employees", {
-      params: { skip, limit },
+      params: { skip, limit, include_offboarded: includeOffboarded },
     });
     return data;
   },
 
-  async listSeparated(skip = 0, limit = 50) {
-    const { data } = await api.get<SeparatedEmployee[]>("/employees/separated", {
-      params: { skip, limit },
+  async listOffboarded(limit = 50) {
+    const { data } = await api.get<EmployeePublic[]>("/employees/offboarded", {
+      params: { limit },
     });
     return data;
   },
@@ -64,13 +63,29 @@ export const employeeService = {
     return data;
   },
 
-  async offboard(id: string, payload: OffboardInput) {
-    const { data } = await api.post<EmployeeFull>(`/employees/${id}/offboard`, payload);
+  async offboard(id: string, reason: "resigned" | "terminated") {
+    const { data } = await api.post<EmployeeFull | EmployeePublic>(
+      `/employees/${id}/offboard`,
+      { reason }
+    );
     return data;
   },
 
+
   async reactivate(id: string) {
-    const { data } = await api.post<EmployeeFull>(`/employees/${id}/reactivate`);
+    const { data } = await api.post<EmployeePublic>(
+      `/employees/${id}/reactivate`,
+    );
+    return data;
+  }
+
+
+  async importFromExcel(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    const { data } = await api.post<EmployeeImportResult>("/employees/import", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return data;
   },
 };
