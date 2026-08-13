@@ -1,0 +1,579 @@
+
+
+
+/* ============================================================
+   HRHUB MODERN HRMS DESIGN SYSTEM
+   Keka-inspired enterprise HR experience
+   ============================================================ */
+
+:root {
+  --hrhub-primary: #2563eb;
+  --hrhub-primary-dark: #1d4ed8;
+  --hrhub-primary-soft: #eff6ff;
+  --hrhub-sidebar: #172554;
+  --hrhub-sidebar-hover: #1e3a8a;
+  --hrhub-page: #f6f8fc;
+  --hrhub-card: #ffffff;
+  --hrhub-border: #e5e7eb;
+  --hrhub-text: #172033;
+  --hrhub-muted: #6b7280;
+  --hrhub-success: #16a34a;
+  --hrhub-warning: #d97706;
+  --hrhub-danger: #dc2626;
+}
+
+/* Page background */
+
+body {
+  background: var(--hrhub-page);
+  color: var(--hrhub-text);
+}
+
+/* Smooth enterprise UI */
+
+button,
+a,
+input,
+select,
+textarea {
+  transition:
+    background-color .18s ease,
+    border-color .18s ease,
+    color .18s ease,
+    box-shadow .18s ease,
+    transform .18s ease;
+}
+
+/* Cards */
+
+.hrhub-card {
+  background: var(--hrhub-card);
+  border: 1px solid var(--hrhub-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+}
+
+.hrhub-card:hover {
+  box-shadow: 0 5px 18px rgba(15, 23, 42, .07);
+}
+
+/* Employee 360 header */
+
+.hrhub-profile-header {
+  background:
+    linear-gradient(
+      135deg,
+      #eff6ff 0%,
+      #ffffff 65%
+    );
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+}
+
+/* Status */
+
+.hrhub-status-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hrhub-status-active::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+/* Section headings */
+
+.hrhub-section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--hrhub-text);
+}
+
+.hrhub-section-subtitle {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--hrhub-muted);
+}
+
+/* Employee navigation */
+
+.hrhub-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--hrhub-border);
+  scrollbar-width: none;
+}
+
+.hrhub-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.hrhub-tab {
+  position: relative;
+  padding: 11px 15px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.hrhub-tab:hover {
+  color: var(--hrhub-primary);
+  background: var(--hrhub-primary-soft);
+}
+
+.hrhub-tab-active {
+  color: var(--hrhub-primary);
+  font-weight: 600;
+}
+
+.hrhub-tab-active::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--hrhub-primary);
+}
+
+/* Information fields */
+
+.hrhub-field-label {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .035em;
+}
+
+.hrhub-field-value {
+  margin-top: 4px;
+  color: var(--hrhub-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Quick action */
+
+.hrhub-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 9px;
+  padding: 8px 13px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hrhub-action-primary {
+  background: var(--hrhub-primary);
+  color: white;
+}
+
+.hrhub-action-primary:hover {
+  background: var(--hrhub-primary-dark);
+  transform: translateY(-1px);
+}
+
+/* Leave progress */
+
+.hrhub-progress {
+  height: 7px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.hrhub-progress > div {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--hrhub-primary);
+}
+
+/* Team nodes */
+
+.hrhub-team-node {
+  border: 1px solid var(--hrhub-border);
+  border-radius: 12px;
+  background: white;
+  padding: 12px;
+  transition: .18s ease;
+}
+
+.hrhub-team-node:hover {
+  border-color: #bfdbfe;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, .08);
+}
+
+/* Holiday */
+
+.hrhub-holiday {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hrhub-holiday:last-child {
+  border-bottom: 0;
+}
+
+.hrhub-holiday-date {
+  display: flex;
+  min-width: 46px;
+  height: 46px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--hrhub-primary-soft);
+  color: var(--hrhub-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Directory */
+
+.hrhub-directory-row {
+  background: white;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hrhub-directory-row:hover {
+  background: #f8fafc;
+}
+
+/* Responsive */
+
+@media (max-width: 900px) {
+  .hrhub-profile-header {
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hrhub-tabs {
+    margin-inline: -4px;
+  }
+
+  .hrhub-tab {
+    padding-inline: 10px;
+  }
+}
+
+/* ============================================================
+   END HRHUB DESIGN SYSTEM
+   ============================================================ */
+
+
+/* =========================================================
+   HRHUB PREMIUM HRMS UI
+   ========================================================= */
+
+:root {
+  --hr-primary: #2563eb;
+  --hr-primary-dark: #1d4ed8;
+  --hr-primary-soft: #eff6ff;
+  --hr-page: #f5f7fb;
+  --hr-card: #ffffff;
+  --hr-border: #e5e7eb;
+  --hr-text: #172033;
+  --hr-muted: #64748b;
+  --hr-success: #16a34a;
+  --hr-warning: #d97706;
+  --hr-danger: #dc2626;
+}
+
+body {
+  background: var(--hr-page);
+  color: var(--hr-text);
+}
+
+/* premium cards */
+
+.hr-premium-card {
+  background: #fff;
+  border: 1px solid var(--hr-border);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(15,23,42,.035);
+  transition: all .2s ease;
+}
+
+.hr-premium-card:hover {
+  box-shadow: 0 8px 24px rgba(15,23,42,.07);
+  border-color: #dbe3f0;
+}
+
+/* employee hero */
+
+.hr-employee-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(59,130,246,.12), transparent 30%),
+    linear-gradient(135deg,#eff6ff 0%,#ffffff 72%);
+}
+
+.hr-employee-avatar {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:64px;
+  height:64px;
+  border-radius:16px;
+  background:linear-gradient(135deg,#2563eb,#4f46e5);
+  color:white;
+  font-size:22px;
+  font-weight:700;
+  box-shadow:0 8px 20px rgba(37,99,235,.2);
+}
+
+.hr-active {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:#ecfdf5;
+  color:#15803d;
+  font-size:11px;
+  font-weight:700;
+}
+
+.hr-active-dot {
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#22c55e;
+}
+
+/* tabs */
+
+.hr-tabs {
+  display:flex;
+  gap:3px;
+  overflow-x:auto;
+  border-bottom:1px solid var(--hr-border);
+  scrollbar-width:none;
+}
+
+.hr-tabs::-webkit-scrollbar {
+  display:none;
+}
+
+.hr-tab {
+  position:relative;
+  padding:12px 15px;
+  color:#64748b;
+  font-size:13px;
+  font-weight:500;
+  white-space:nowrap;
+  cursor:pointer;
+}
+
+.hr-tab:hover {
+  color:#2563eb;
+  background:#eff6ff;
+}
+
+.hr-tab.active {
+  color:#2563eb;
+  font-weight:600;
+}
+
+.hr-tab.active:after {
+  content:"";
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:-1px;
+  height:2px;
+  border-radius:4px;
+  background:#2563eb;
+}
+
+/* stat cards */
+
+.hr-stat {
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:14px;
+  padding:16px;
+  transition:.2s ease;
+}
+
+.hr-stat:hover {
+  transform:translateY(-2px);
+  box-shadow:0 7px 20px rgba(15,23,42,.06);
+}
+
+.hr-stat-label {
+  color:#94a3b8;
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.hr-stat-value {
+  margin-top:5px;
+  color:#172033;
+  font-size:21px;
+  font-weight:700;
+}
+
+.hr-stat-meta {
+  margin-top:3px;
+  color:#64748b;
+  font-size:11px;
+}
+
+/* information */
+
+.hr-field-label {
+  color:#94a3b8;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.hr-field-value {
+  margin-top:4px;
+  color:#172033;
+  font-size:13px;
+  font-weight:500;
+}
+
+/* leave */
+
+.hr-leave-card {
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:14px;
+  background:#fff;
+}
+
+.hr-progress {
+  height:6px;
+  overflow:hidden;
+  border-radius:99px;
+  background:#e5e7eb;
+}
+
+.hr-progress > div {
+  height:100%;
+  border-radius:inherit;
+  background:#2563eb;
+}
+
+/* holidays */
+
+.hr-holiday {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:11px 0;
+  border-bottom:1px solid #f1f5f9;
+}
+
+.hr-holiday:last-child {
+  border-bottom:0;
+}
+
+.hr-holiday-date {
+  width:46px;
+  height:46px;
+  flex:none;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  background:#eff6ff;
+  color:#2563eb;
+}
+
+.hr-holiday-day {
+  font-size:16px;
+  font-weight:700;
+  line-height:16px;
+}
+
+.hr-holiday-month {
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+}
+
+/* team */
+
+.hr-team-node {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px;
+  border:1px solid #e5e7eb;
+  border-radius:11px;
+  background:#fff;
+  transition:.2s ease;
+}
+
+.hr-team-node:hover {
+  border-color:#bfdbfe;
+  box-shadow:0 5px 16px rgba(37,99,235,.08);
+}
+
+/* edit buttons */
+
+.hr-edit {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  color:#2563eb;
+  font-size:12px;
+  font-weight:600;
+}
+
+.hr-edit:hover {
+  text-decoration:underline;
+}
+
+/* responsive */
+
+@media(max-width:768px) {
+  .hr-employee-hero {
+    border-radius:12px;
+  }
+
+  .hr-tabs {
+    margin-inline:-8px;
+  }
+
+  .hr-tab {
+    padding-inline:10px;
+  }
+}
+
+/* =========================================================
+   END HRHUB PREMIUM UI
+   ========================================================= */

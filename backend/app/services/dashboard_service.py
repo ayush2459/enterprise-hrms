@@ -95,8 +95,8 @@ class DashboardService:
                 designation=e.designation,
                 department=e.department,
                 status=e.status,
-                separation_date=e.separation_date,
-                separation_reason=e.separation_reason,
+                separation_date=e.offboarded_at,
+                separation_reason=e.offboard_reason.value if e.offboard_reason else None,
             )
             for e in separated_rows
         ]

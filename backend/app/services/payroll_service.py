@@ -74,6 +74,44 @@ class PayrollService:
         await self.audit.log(requester.id, "payroll_create", "employee", str(employee_id))
         return record
 
+    async def update_record(
+        self,
+        record_id: UUID,
+        month: date,
+        basic_pay: int,
+        allowances: int,
+        deductions: int,
+        requester: User,
+    ) -> PayrollRecord:
+        if requester.role not in HR_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only HR Admin, HR Executive, or System Admin can edit payroll.",
+            )
+
+        record = await self.records.get_by_id(record_id)
+        if record is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payroll record not found",
+            )
+
+        record.month = month.replace(day=1)
+        record.basic_pay = basic_pay
+        record.allowances = allowances
+        record.deductions = deductions
+        record.net_pay = basic_pay + allowances - deductions
+
+        await self.records.save(record)
+        await self.audit.log(
+            requester.id,
+            "payroll_update",
+            "payroll_record",
+            str(record_id),
+        )
+
+        return record
+
     async def update_status(self, record_id: UUID, new_status: PayrollStatus, requester: User) -> PayrollRecord:
         if requester.role not in HR_ROLES:
             raise HTTPException(

@@ -43,15 +43,20 @@ class EmployeeStatus(str, enum.Enum):
     ACTIVE = "active"
     ON_LEAVE = "on_leave"
     OFFBOARDED = "offboarded"
-    RESIGNED = "resigned"
-    TERMINATED = "terminated"
 
 
-# Statuses that mean "no longer with the company" — used everywhere we
-# need to exclude ex-employees from the active roster (directory,
-# dashboard headcount) and everywhere we need to list who has left.
-SEPARATED_STATUSES = (EmployeeStatus.RESIGNED, EmployeeStatus.TERMINATED)
+# A single canonical status identifies an employee who has left.
+# The reason is stored separately in OffboardReason.
+SEPARATED_STATUSES = (EmployeeStatus.OFFBOARDED,)
 
+
+class OffboardReason(str, enum.Enum):
+    RESIGNATION = "resignation"
+    TERMINATION = "termination"
+    CONTRACT_END = "contract_end"
+    RETIREMENT = "retirement"
+    ABANDONMENT = "abandonment"
+    OTHER = "other"
 
 class ConversionStatus(str, enum.Enum):
     """Tracks an intern's request to convert to a full-time employee.

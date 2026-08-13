@@ -38,8 +38,8 @@ async def list_employees(
     return await EmployeeService(db).list_directory(skip, limit)
 
 
-@router.get("/separated", response_model=list[SeparatedEmployee])
-async def list_separated_employees(
+@router.get("/offboarded", response_model=list[SeparatedEmployee])
+async def list_offboarded_employees(
     skip: int = 0,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
@@ -48,7 +48,7 @@ async def list_separated_employees(
     """Everyone who has resigned or been terminated — the 'former
     employees' list. Registered before /{employee_id} so it doesn't get
     swallowed by the dynamic route."""
-    return await EmployeeService(db).list_separated(skip, limit)
+    return await EmployeeService(db).list_offboarded(skip, limit)
 
 
 @router.get("/stats/summary", response_model=EmployeeStats)
@@ -161,7 +161,7 @@ async def offboard_employee(
     if employee is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
 
-    updated = await EmployeeService(db).offboard_employee(employee, payload, current_user)
+    updated = await EmployeeService(db).offboard_employee(employee, payload.reason, current_user)
     await db.commit()
     return EmployeeReadFull.model_validate(updated)
 
