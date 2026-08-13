@@ -12,6 +12,13 @@ class PayrollRecordCreate(BaseModel):
     deductions: int = 0
 
 
+class PayrollRecordUpdate(BaseModel):
+    month: date
+    basic_pay: int
+    allowances: int = 0
+    deductions: int = 0
+
+
 class PayrollStatusUpdate(BaseModel):
     status: PayrollStatus
 

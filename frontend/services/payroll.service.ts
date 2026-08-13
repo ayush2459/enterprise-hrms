@@ -17,6 +17,25 @@ export const payrollService = {
     return data;
   },
 
+  async updateRecord(
+    recordId: string,
+    month: string,
+    basicPay: number,
+    allowances: number,
+    deductions: number
+  ) {
+    const { data } = await api.patch<PayrollRecord>(
+      `/payroll/${recordId}`,
+      {
+        month,
+        basic_pay: basicPay,
+        allowances,
+        deductions,
+      }
+    );
+    return data;
+  },
+
   async updateStatus(recordId: string, status: PayrollStatus) {
     const { data } = await api.patch<PayrollRecord>(`/payroll/${recordId}/status`, { status });
     return data;

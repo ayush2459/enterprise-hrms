@@ -1,6 +1,27 @@
 import { api } from "@/lib/api";
 import type { DocumentRecord, DocumentStatus } from "@/types";
 
+export const HR_DOCUMENT_TYPES = [
+  { value: "pan_card", label: "PAN Card" },
+  { value: "aadhaar_card", label: "Aadhaar Card" },
+  { value: "resume", label: "Resume / CV" },
+  { value: "passport", label: "Passport" },
+  { value: "photograph", label: "Photograph" },
+  { value: "address_proof", label: "Address Proof" },
+  { value: "bank_proof", label: "Bank Proof / Cancelled Cheque" },
+  { value: "educational_certificate", label: "Educational Certificate" },
+  { value: "class_10_certificate", label: "10th Certificate" },
+  { value: "class_12_certificate", label: "12th Certificate" },
+  { value: "graduation_certificate", label: "Graduation Certificate" },
+  { value: "employment_proof", label: "Employment Proof" },
+  { value: "joining_letter", label: "Joining Letter" },
+  { value: "offer_letter", label: "Offer Letter" },
+  { value: "appraisal_letter", label: "Appraisal Letter" },
+  { value: "relieving_letter", label: "Relieving Letter" },
+  { value: "experience_letter", label: "Experience Letter" },
+  { value: "other", label: "Other Document" },
+] as const;
+
 export const documentService = {
   async listForEmployee(employeeId: string) {
     const { data } = await api.get<DocumentRecord[]>(`/documents/employee/${employeeId}`);
