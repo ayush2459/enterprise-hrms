@@ -170,6 +170,16 @@ class DashboardService:
             if not e.bank_account_number or not e.pf_number
         )
         if incomplete_bank_pf:
+            bank_pf_employees = [
+                e for e in all_employees
+                if not e.bank_account_number or not e.pf_number
+            ]
+            bank_pf_link = (
+                f"/employees/{bank_pf_employees[0].id}"
+                if len(bank_pf_employees) == 1
+                else "/employees"
+            )
+
             smart_alerts.append(
                 SmartAlert(
                     severity="warning",
@@ -179,7 +189,7 @@ class DashboardService:
                         "missing bank or PF details"
                     ),
                     count=incomplete_bank_pf,
-                    link="/employees",
+                    link=bank_pf_link,
                 )
             )
 
@@ -196,6 +206,24 @@ class DashboardService:
             )
         )
         if recent_joiners_missing_offer:
+            recent_joiners_missing_offer_employees = [
+                e for e in all_employees
+                if (
+                    e.date_of_joining
+                    and e.date_of_joining >= thirty_days_ago
+                    and not (
+                        e.offer_letter_status
+                        and "received" in e.offer_letter_status.lower()
+                    )
+                )
+            ]
+
+            offer_link = (
+                f"/employees/{recent_joiners_missing_offer_employees[0].id}"
+                if len(recent_joiners_missing_offer_employees) == 1
+                else "/employees"
+            )
+
             smart_alerts.append(
                 SmartAlert(
                     severity="warning",
@@ -205,7 +233,7 @@ class DashboardService:
                         "without a confirmed offer letter on file"
                     ),
                     count=recent_joiners_missing_offer,
-                    link="/employees",
+                    link=offer_link,
                 )
             )
 
@@ -218,6 +246,20 @@ class DashboardService:
             )
         )
         if pending_relieving_letters:
+            relieving_employees = [
+                e for e in all_separated
+                if not (
+                    e.experience_relieving_letter_status
+                    and "sent" in e.experience_relieving_letter_status.lower()
+                )
+            ]
+
+            relieving_link = (
+                f"/employees/{relieving_employees[0].id}"
+                if len(relieving_employees) == 1
+                else "/employees/former"
+            )
+
             smart_alerts.append(
                 SmartAlert(
                     severity="critical",
@@ -227,7 +269,7 @@ class DashboardService:
                         "still missing an experience/relieving letter"
                     ),
                     count=pending_relieving_letters,
-                    link="/employees/former",
+                    link=relieving_link,
                 )
             )
 
@@ -240,6 +282,20 @@ class DashboardService:
             )
         )
         if pending_resignation_acceptance:
+            resignation_employees = [
+                e for e in all_separated
+                if not (
+                    e.resignation_acceptance_status
+                    and e.resignation_acceptance_status.strip()
+                )
+            ]
+
+            resignation_link = (
+                f"/employees/{resignation_employees[0].id}"
+                if len(resignation_employees) == 1
+                else "/employees/former"
+            )
+
             smart_alerts.append(
                 SmartAlert(
                     severity="warning",
@@ -249,7 +305,7 @@ class DashboardService:
                         "pending formal acceptance"
                     ),
                     count=pending_resignation_acceptance,
-                    link="/employees/former",
+                    link=resignation_link,
                 )
             )
 

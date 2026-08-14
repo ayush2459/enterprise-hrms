@@ -112,6 +112,8 @@ class SeparatedEmployee(BaseModel):
     designation: str | None = None
     department: str | None = None
     status: EmployeeStatus
+    offboard_reason: OffboardReason | None = None
+    offboarded_at: date | None = None
 
 
 class ConversionDecisionRequest(BaseModel):
