@@ -22,6 +22,9 @@ import {
   Cake,
   PartyPopper,
   CalendarDays as EventCalendar,
+  AlertTriangle,
+  AlertCircle,
+  Info,
 } from "lucide-react";
 
 import { Topbar } from "@/components/layout/Topbar";
@@ -70,7 +73,18 @@ export default function DashboardPage() {
     // Refresh dashboard data periodically so the dashboard remains live.
     const interval = setInterval(loadDashboard, 30000);
 
-    return () => clearInterval(interval);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadDashboard();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const totalEmployees = data?.total_employees ?? 0;
@@ -237,6 +251,122 @@ export default function DashboardPage() {
           })}
 
         </div>
+
+        {/* SMART HR ALERTS */}
+
+        {data?.smart_alerts?.length ? (
+          <section className="mt-6 rounded-xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.035)]">
+
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Needs Your Attention
+                  </h3>
+
+                  <span className="rounded-full bg-red-50 px-2 py-0.5 text-[9px] font-bold text-red-600">
+                    {data.smart_alerts.length}
+                  </span>
+                </div>
+
+                <p className="mt-0.5 text-[10px] text-slate-400">
+                  Smart HR alerts based on your live workforce data
+                </p>
+              </div>
+
+              <AlertTriangle size={18} className="text-amber-500" />
+
+            </div>
+
+            <div className="divide-y divide-slate-100">
+
+              {data.smart_alerts.map((alert, index) => {
+
+                const isCritical = alert.severity === "critical";
+                const isWarning = alert.severity === "warning";
+
+                const Icon = isCritical
+                  ? AlertTriangle
+                  : isWarning
+                    ? AlertCircle
+                    : Info;
+
+                const containerClass = isCritical
+                  ? "border-l-red-500 bg-red-50/40 hover:bg-red-50"
+                  : isWarning
+                    ? "border-l-amber-500 bg-amber-50/30 hover:bg-amber-50/60"
+                    : "border-l-blue-500 bg-blue-50/20 hover:bg-blue-50/50";
+
+                const iconClass = isCritical
+                  ? "bg-red-100 text-red-600"
+                  : isWarning
+                    ? "bg-amber-100 text-amber-600"
+                    : "bg-blue-100 text-blue-600";
+
+                const severityClass = isCritical
+                  ? "bg-red-100 text-red-700"
+                  : isWarning
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-blue-100 text-blue-700";
+
+                return (
+                  <Link
+                    key={`${alert.severity}-${alert.message}-${index}`}
+                    href={alert.link}
+                    className={[
+                      "flex items-center gap-4 border-l-4 px-5 py-4 transition",
+                      containerClass,
+                    ].join(" ")}
+                  >
+
+                    <div
+                      className={[
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                        iconClass,
+                      ].join(" ")}
+                    >
+                      <Icon size={18} />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+
+                      <div className="flex flex-wrap items-center gap-2">
+
+                        <p className="text-xs font-bold text-slate-800">
+                          {alert.message}
+                        </p>
+
+                        <span
+                          className={[
+                            "rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wide",
+                            severityClass,
+                          ].join(" ")}
+                        >
+                          {alert.severity}
+                        </span>
+
+                      </div>
+
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        {alert.count} employee{alert.count === 1 ? "" : "s"} affected · Click to review
+                      </p>
+
+                    </div>
+
+                    <ArrowRight
+                      size={15}
+                      className="shrink-0 text-slate-300 transition group-hover:text-slate-500"
+                    />
+
+                  </Link>
+                );
+              })}
+
+            </div>
+
+          </section>
+        ) : null}
 
         {/* QUICK ACTIONS */}
 
