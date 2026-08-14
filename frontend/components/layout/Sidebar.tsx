@@ -85,6 +85,11 @@ const manage = [
     icon: HeartPulse,
   },
   {
+    label: "Leave Policies",
+    href: "/leave-policies",
+    icon: CalendarDays,
+  },
+  {
     label: "Background Checks",
     href: "/background-check",
     icon: ShieldCheck,
