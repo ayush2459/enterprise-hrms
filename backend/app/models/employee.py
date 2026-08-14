@@ -71,6 +71,16 @@ class Employee(Base, UUIDPkMixin, TimestampMixin):
     bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     pf_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
+    # HR process/checklist tracking used by Smart Dashboard alerts.
+    offer_letter_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    onboarding_email_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    appraisal_letter_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    bonus_payout_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    promotion_letter_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    resignation_email_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    resignation_acceptance_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    experience_relieving_letter_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+
     selection_status: Mapped[SelectionStatus] = mapped_column(
         Enum(SelectionStatus, name="selection_status_enum"), default=SelectionStatus.JOINED
     )
