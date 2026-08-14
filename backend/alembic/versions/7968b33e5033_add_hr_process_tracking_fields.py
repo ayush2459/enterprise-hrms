@@ -17,15 +17,30 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("employees", sa.Column("offer_letter_status", sa.String(length=120), nullable=True))
-    op.add_column("employees", sa.Column("onboarding_email_status", sa.String(length=120), nullable=True))
-    op.add_column("employees", sa.Column("appraisal_letter_status", sa.String(length=120), nullable=True))
-    op.add_column("employees", sa.Column("bonus_payout_status", sa.String(length=120), nullable=True))
-    op.add_column("employees", sa.Column("promotion_letter_status", sa.String(length=120), nullable=True))
-    op.add_column("employees", sa.Column("resignation_email_status", sa.String(length=120), nullable=True))
-    op.add_column("employees", sa.Column("resignation_acceptance_status", sa.String(length=120), nullable=True))
-    op.add_column("employees", sa.Column("experience_relieving_letter_status", sa.String(length=120), nullable=True))
+    bind = op.get_bind()
 
+    existing_columns = {
+        column["name"]
+        for column in sa.inspect(bind).get_columns("employees")
+    }
+
+    columns = [
+        ("offer_letter_status", sa.String(length=120)),
+        ("onboarding_email_status", sa.String(length=120)),
+        ("appraisal_letter_status", sa.String(length=120)),
+        ("bonus_payout_status", sa.String(length=120)),
+        ("promotion_letter_status", sa.String(length=120)),
+        ("resignation_email_status", sa.String(length=120)),
+        ("resignation_acceptance_status", sa.String(length=120)),
+        ("experience_relieving_letter_status", sa.String(length=120)),
+    ]
+
+    for name, column_type in columns:
+        if name not in existing_columns:
+            op.add_column(
+                "employees",
+                sa.Column(name, column_type, nullable=True),
+            )
 
 def downgrade() -> None:
     op.drop_column("employees", "experience_relieving_letter_status")
