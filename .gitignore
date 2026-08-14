@@ -23,3 +23,5 @@ docker/postgres/data/
 .vscode/
 .idea/
 frontend/tsconfig.tsbuildinfo
+.vercel
+.env*

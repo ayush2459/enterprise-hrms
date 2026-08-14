@@ -20,6 +20,20 @@ def _days_between(start, end) -> int:
     return (end - start).days + 1
 
 
+def _days_in_year(start, end, year: int) -> int:
+    """Return only the portion of a date range that falls inside a calendar year."""
+    year_start = date(year, 1, 1)
+    year_end = date(year, 12, 31)
+
+    overlap_start = max(start, year_start)
+    overlap_end = min(end, year_end)
+
+    if overlap_end < overlap_start:
+        return 0
+
+    return _days_between(overlap_start, overlap_end)
+
+
 class LeaveService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -328,20 +342,59 @@ class LeaveService:
             )
 
         # ---------------------------------------------------------
-        # ANNUAL BALANCE
+        # ANNUAL BALANCE + CARRY FORWARD
         # ---------------------------------------------------------
+        current_year = start_date.year
+        previous_year = current_year - 1
+
         approved = await self.requests.list_approved_by_employee_and_type(
             employee_id,
             leave_type.id,
         )
 
-        days_used = sum(
-            _days_between(request.start_date, request.end_date)
+        # Only approved leave taken in the current calendar year
+        # consumes the current year's quota.
+        current_year_used = sum(
+            _days_in_year(
+                request.start_date,
+                request.end_date,
+                current_year,
+            )
             for request in approved
         )
 
+        # Calculate unused quota from the previous calendar year.
+        previous_year_used = sum(
+            _days_in_year(
+                request.start_date,
+                request.end_date,
+                previous_year,
+            )
+            for request in approved
+        )
+
+        previous_year_unused = max(
+            leave_type.annual_quota_days - previous_year_used,
+            0,
+        )
+
+        # Carry-forward is controlled entirely by the policy
+        # configured by HR/admin.
+        carry_forward_days = 0
+
+        if leave_type.carry_forward_allowed:
+            carry_forward_days = min(
+                previous_year_unused,
+                leave_type.max_carry_forward_days,
+            )
+
+        total_available_days = (
+            leave_type.annual_quota_days
+            + carry_forward_days
+        )
+
         remaining_days = max(
-            leave_type.annual_quota_days - days_used,
+            total_available_days - current_year_used,
             0,
         )
 
