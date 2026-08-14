@@ -20,26 +20,6 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column(
         "employees",
-        sa.Column("bank_account_holder_name", sa.String(length=255), nullable=True),
-    )
-    op.add_column(
-        "employees",
-        sa.Column("bank_account_number", sa.String(length=50), nullable=True),
-    )
-    op.add_column(
-        "employees",
-        sa.Column("bank_ifsc_code", sa.String(length=20), nullable=True),
-    )
-    op.add_column(
-        "employees",
-        sa.Column("bank_name", sa.String(length=120), nullable=True),
-    )
-    op.add_column(
-        "employees",
-        sa.Column("pf_number", sa.String(length=50), nullable=True),
-    )
-    op.add_column(
-        "employees",
         sa.Column("offer_letter_status", sa.String(length=120), nullable=True),
     )
     op.add_column(
@@ -85,8 +65,3 @@ def downgrade() -> None:
     op.drop_column("employees", "appraisal_letter_status")
     op.drop_column("employees", "onboarding_email_status")
     op.drop_column("employees", "offer_letter_status")
-    op.drop_column("employees", "pf_number")
-    op.drop_column("employees", "bank_name")
-    op.drop_column("employees", "bank_ifsc_code")
-    op.drop_column("employees", "bank_account_number")
-    op.drop_column("employees", "bank_account_holder_name")
