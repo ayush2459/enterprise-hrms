@@ -80,6 +80,7 @@ class EmployeeReadPublic(EmployeeBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    gender: str | None = None
     photo_url: str | None = None
     status: EmployeeStatus
     selection_status: SelectionStatus

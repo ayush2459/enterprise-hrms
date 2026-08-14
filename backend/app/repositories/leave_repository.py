@@ -27,6 +27,11 @@ class LeaveTypeRepository:
         await self.db.refresh(leave_type)
         return leave_type
 
+    async def update(self, leave_type: LeaveType) -> LeaveType:
+        await self.db.flush()
+        await self.db.refresh(leave_type)
+        return leave_type
+
 
 class LeaveRequestRepository:
     def __init__(self, db: AsyncSession):

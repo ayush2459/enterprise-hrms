@@ -17,6 +17,7 @@ export interface User {
 export interface EmployeePublic {
   id: string;
   full_name: string;
+  gender: string | null;
   department: string | null;
   designation: string | null;
   employment_type: "full_time" | "intern" | "contract";
@@ -326,6 +327,46 @@ export interface LeaveType {
   id: string;
   name: string;
   annual_quota_days: number;
+
+  eligibility_gender: "all" | "male" | "female";
+  is_paid: boolean;
+
+  carry_forward_allowed: boolean;
+  max_carry_forward_days: number;
+
+  encashment_allowed: boolean;
+
+  requires_document: boolean;
+  requires_reason: boolean;
+
+  min_days: number;
+  max_days: number;
+  advance_notice_days: number;
+
+  is_active: boolean;
+}
+
+
+export interface LeaveTypePayload {
+  name: string;
+  annual_quota_days: number;
+
+  eligibility_gender: "all" | "male" | "female";
+  is_paid: boolean;
+
+  carry_forward_allowed: boolean;
+  max_carry_forward_days: number;
+
+  encashment_allowed: boolean;
+
+  requires_document: boolean;
+  requires_reason: boolean;
+
+  min_days: number;
+  max_days: number;
+  advance_notice_days: number;
+
+  is_active: boolean;
 }
 
 export interface LeaveRequest {

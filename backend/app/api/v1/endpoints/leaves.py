@@ -33,7 +33,38 @@ async def create_leave_type(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await LeaveService(db).create_leave_type(payload.name, payload.annual_quota_days, current_user)
+    result = await LeaveService(db).create_leave_type(
+        payload.name,
+        payload.annual_quota_days,
+        payload.eligibility_gender,
+        payload.is_paid,
+        payload.carry_forward_allowed,
+        payload.max_carry_forward_days,
+        payload.encashment_allowed,
+        payload.requires_document,
+        payload.requires_reason,
+        payload.min_days,
+        payload.max_days,
+        payload.advance_notice_days,
+        payload.is_active,
+        current_user,
+    )
+    await db.commit()
+    return result
+
+
+@router.patch("/types/{leave_type_id}", response_model=LeaveTypeRead)
+async def update_leave_type(
+    leave_type_id: UUID,
+    payload: LeaveTypeCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await LeaveService(db).update_leave_type(
+        leave_type_id,
+        payload,
+        current_user,
+    )
     await db.commit()
     return result
 
