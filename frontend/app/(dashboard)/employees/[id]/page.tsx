@@ -40,6 +40,7 @@ Asset,
   OrgSnippet,
   InsuranceFull,
   LeaveBalance,
+  LeaveRequest,
   PayrollRecord,
   PerformanceReview,
   EmployeeProject,
@@ -152,6 +153,7 @@ export default function EmployeeProfilePage() {
   const [reviews, setReviews] = useState<PerformanceReview[]>([]);
   const [attendance, setAttendance] = useState<AttendanceSummary | null>(null);
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [bgvChecks, setBgvChecks] = useState<BGVCheck[]>([]);
   const [loading, setLoading] = useState(true);
@@ -366,7 +368,32 @@ export default function EmployeeProfilePage() {
 
     performanceService.listForEmployee(employeeId).then(setReviews).catch(() => setReviews([]));
     attendanceService.getSummary(employeeId).then(setAttendance).catch(() => setAttendance(null));
-    leaveService.getBalance(employeeId).then(setLeaveBalances).catch(() => setLeaveBalances([]));
+
+    Promise.all([
+      leaveService.listForEmployee(employeeId),
+      leaveService.getBalance(employeeId),
+    ])
+      .then(([requests, balances]) => {
+        setLeaveRequests(requests);
+
+        // Only keep balances for leave types this employee has
+        // actually applied for. Leave policies are organization-wide,
+        // but Leave Details on an employee profile is employee-specific.
+        const appliedTypeIds = new Set(
+          requests.map((request) => request.leave_type_id)
+        );
+
+        setLeaveBalances(
+          balances.filter((balance) =>
+            appliedTypeIds.has(balance.leave_type_id)
+          )
+        );
+      })
+      .catch(() => {
+        setLeaveRequests([]);
+        setLeaveBalances([]);
+      });
+
     documentService.listForEmployee(employeeId).then(setDocuments).catch(() => setDocuments([]));
     bgvService
       .listForEmployee(employeeId)
@@ -374,6 +401,17 @@ export default function EmployeeProfilePage() {
       .catch(() => setBgvChecks([]))
       .finally(() => setLoading(false));
   }, [employeeId]);
+
+  /*
+   * Leave Details on the employee profile are employee-specific.
+   *
+   * getBalance() returns every organization leave policy, so we
+   * intersect it with this employee's actual leave requests.
+   *
+   * Gender eligibility remains enforced by the backend when the
+   * request is created; this UI does not hard-code male/female
+   * policies.
+   */
 
   if (loading || !employee) {
     return (
@@ -1436,7 +1474,7 @@ export default function EmployeeProfilePage() {
               </div>
             ) : (
               <p className="text-xs text-gray-400">
-                No leave types configured yet.
+                No leave applications yet.
               </p>
             )}
           </SectionCard>
@@ -1465,7 +1503,9 @@ export default function EmployeeProfilePage() {
                 label="Leave Balance"
                 value={
                   leaveBalances.length > 0
-                    ? leaveBalances.map((b) => `${b.leave_type_name}: ${b.days_remaining}d`).join(", ")
+                    ? leaveBalances
+                        .map((b) => `${b.leave_type_name}: ${b.days_remaining}d`)
+                        .join(", ")
                     : null
                 }
               />
