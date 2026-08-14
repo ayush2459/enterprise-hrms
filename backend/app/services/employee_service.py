@@ -60,19 +60,14 @@ class EmployeeService:
 
     async def list_offboarded(
         self, skip: int = 0, limit: int = 50
-    ) -> list["OffboardedEmployee"]:
-        employees = await self.repo.list_offboarded(limit)
+    ) -> list[EmployeeReadPublic]:
+        employees = await self.repo.list_offboarded(
+            skip=skip,
+            limit=limit,
+        )
         return [
-            OffboardedEmployee(
-                id=e.id,
-                full_name=e.full_name,
-                designation=e.designation,
-                department=e.department,
-                status=e.status,
-                offboarded_at=e.offboarded_at,
-                offboard_reason=e.offboard_reason.value if e.offboard_reason else None,
-            )
-            for e in employees[skip:]
+            EmployeeReadPublic.model_validate(employee)
+            for employee in employees
         ]
 
     async def get_stats(self) -> EmployeeStats:
