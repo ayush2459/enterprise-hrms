@@ -25,25 +25,31 @@ import type { EmployeePublic } from "@/types";
 
 const PAGE_RESULTS = [
   { label: "Dashboard", keywords: "home overview analytics", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Employees", keywords: "employee directory people staff", href: "/employees", icon: Users },
-  { label: "Recruitment", keywords: "hiring jobs candidates applicants", href: "/recruitment", icon: UserPlus },
-  { label: "Onboarding", keywords: "joining new hire checklist", href: "/onboarding", icon: UserCheck },
-  { label: "Attendance", keywords: "time present absent calendar", href: "/attendance", icon: CalendarDays },
-  { label: "Leaves", keywords: "leave requests balance time off", href: "/leaves", icon: CalendarDays },
-  { label: "Payroll", keywords: "salary payslip compensation payroll", href: "/payroll", icon: WalletCards },
-  { label: "Performance", keywords: "reviews goals rating appraisal", href: "/performance", icon: TrendingUp },
-  { label: "Documents", keywords: "files repository contracts records", href: "/documents", icon: FileText },
-  { label: "Teams", keywords: "organization departments structure", href: "/teams", icon: Network },
-  { label: "Insurance", keywords: "benefits medical coverage", href: "/insurance", icon: HeartPulse },
-  { label: "Leave Policies", keywords: "leave policy quota carry forward eligibility", href: "/leave-policies", icon: CalendarDays },
-  { label: "Background Checks", keywords: "bgv verification screening", href: "/background-check", icon: ShieldCheck },
-  { label: "Policies", keywords: "company policies handbook rules", href: "/policies", icon: ClipboardCheck },
-  { label: "Settings", keywords: "configuration organization preferences", href: "/settings", icon: Settings },
+  { label: "Employees", keywords: "employee employees directory people staff", href: "/employees", icon: Users },
+  { label: "Recruitment", keywords: "recruitment recruit hiring jobs candidates applicants", href: "/recruitment", icon: UserPlus },
+  { label: "Onboarding", keywords: "onboarding joining join new hire checklist", href: "/onboarding", icon: UserCheck },
+  { label: "Attendance", keywords: "attendance time present absent calendar", href: "/attendance", icon: CalendarDays },
+  { label: "Leaves", keywords: "leave leaves request requests balance time off vacation", href: "/leaves", icon: CalendarDays },
+  { label: "Payroll", keywords: "payroll salary payslip compensation wages payment", href: "/payroll", icon: WalletCards },
+  { label: "Performance", keywords: "performance reviews review goals rating appraisal", href: "/performance", icon: TrendingUp },
+  { label: "Documents", keywords: "documents document files repository contracts records", href: "/documents", icon: FileText },
+  { label: "Teams", keywords: "teams team organization departments structure", href: "/teams", icon: Network },
+  { label: "Insurance", keywords: "insurance benefits medical coverage health", href: "/insurance", icon: HeartPulse },
+  { label: "Leave Policies", keywords: "leave policies policy quota carry forward eligibility", href: "/leave-policies", icon: CalendarDays },
+  { label: "Background Checks", keywords: "background check checks bgv verification screening", href: "/background-check", icon: ShieldCheck },
+  { label: "Policies", keywords: "policies policy company handbook rules", href: "/policies", icon: ClipboardCheck },
+  { label: "Settings", keywords: "settings setting configuration organization preferences", href: "/settings", icon: Settings },
 ];
 
 interface GlobalSearchProps {
   mobile?: boolean;
   onNavigate?: () => void;
+}
+
+function matchesQuery(value: string, query: string) {
+  const tokens = query.split(/\s+/).filter(Boolean);
+  const haystack = value.toLowerCase();
+  return tokens.every((token) => haystack.includes(token));
 }
 
 export function GlobalSearch({ mobile = false, onNavigate }: GlobalSearchProps) {
@@ -98,27 +104,29 @@ export function GlobalSearch({ mobile = false, onNavigate }: GlobalSearchProps) 
 
   const pageResults = useMemo(() => {
     if (!normalized) return PAGE_RESULTS.slice(0, 6);
-    return PAGE_RESULTS.filter((page) =>
-      `${page.label} ${page.keywords}`.toLowerCase().includes(normalized)
-    ).slice(0, 6);
+    return PAGE_RESULTS
+      .filter((page) => matchesQuery(`${page.label} ${page.keywords}`, normalized))
+      .slice(0, 6);
   }, [normalized]);
 
   const employeeResults = useMemo(() => {
     if (!normalized) return [];
     return employees
-      .filter((employee) => {
-        const haystack = [
-          employee.full_name,
-          employee.department,
-          employee.designation,
-          employee.gender,
-          employee.status,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        return haystack.includes(normalized);
-      })
+      .filter((employee) =>
+        matchesQuery(
+          [
+            employee.full_name,
+            employee.email,
+            employee.department,
+            employee.designation,
+            employee.gender,
+            employee.status,
+          ]
+            .filter(Boolean)
+            .join(" "),
+          normalized
+        )
+      )
       .slice(0, 5);
   }, [employees, normalized]);
 
@@ -127,6 +135,18 @@ export function GlobalSearch({ mobile = false, onNavigate }: GlobalSearchProps) 
     setQuery("");
     onNavigate?.();
     router.push(href);
+  };
+
+  const handleSubmit = () => {
+    if (employeeResults.length > 0 && pageResults.length === 0) {
+      navigate(`/employees/${employeeResults[0].id}`);
+      return;
+    }
+    if (pageResults.length > 0) {
+      navigate(pageResults[0].href);
+      return;
+    }
+    if (employeeResults.length > 0) navigate(`/employees/${employeeResults[0].id}`);
   };
 
   return (
@@ -143,10 +163,8 @@ export function GlobalSearch({ mobile = false, onNavigate }: GlobalSearchProps) 
           onFocus={() => setOpen(true)}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
-              const firstPage = pageResults[0];
-              const firstEmployee = employeeResults[0];
-              if (firstPage) navigate(firstPage.href);
-              else if (firstEmployee) navigate(`/employees/${firstEmployee.id}`);
+              event.preventDefault();
+              handleSubmit();
             }
           }}
           aria-label="Smart search"
@@ -163,7 +181,7 @@ export function GlobalSearch({ mobile = false, onNavigate }: GlobalSearchProps) 
           {!normalized ? (
             <div className="border-b border-slate-100 px-4 py-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Quick navigation</p>
-              <p className="mt-1 text-xs text-slate-500">Jump directly to any HR module or search an employee.</p>
+              <p className="mt-1 text-xs text-slate-500">Search a module, employee, department, or action.</p>
             </div>
           ) : (
             <div className="border-b border-slate-100 px-4 py-2.5">
@@ -196,7 +214,7 @@ export function GlobalSearch({ mobile = false, onNavigate }: GlobalSearchProps) 
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">{employee.full_name.slice(0, 2).toUpperCase()}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-semibold text-slate-800">{employee.full_name}</span>
-                      <span className="block truncate text-[10px] text-slate-400">{[employee.designation, employee.department].filter(Boolean).join(" · ") || "Employee profile"}</span>
+                      <span className="block truncate text-[10px] text-slate-400">{[employee.designation, employee.department].filter(Boolean).join(" · ") || employee.email || "Employee profile"}</span>
                     </span>
                     <ArrowRight size={14} className="text-slate-300 group-hover:text-blue-500" />
                   </button>
@@ -213,7 +231,7 @@ export function GlobalSearch({ mobile = false, onNavigate }: GlobalSearchProps) 
             )}
           </div>
 
-          <div className="border-t border-slate-100 bg-slate-50 px-4 py-2 text-[9px] text-slate-400">Enter to open the first result · Esc to close · ⌘ K to focus</div>
+          <div className="border-t border-slate-100 bg-slate-50 px-4 py-2 text-[9px] text-slate-400">Enter to open the best result · Esc to close · ⌘ K to focus</div>
         </div>
       )}
     </div>
