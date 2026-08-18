@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Edit2, CheckCircle2 } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loader } from "@/components/common/Loader";
@@ -17,11 +18,37 @@ import type { EmployeePublic, InsuranceFull } from "@/types";
 const HR_ROLES = ["hr_admin", "hr_executive", "system_admin"];
 
 export default function InsurancePage() {
+  const { query: pageSearchQuery } = usePageSearch();
   const { user } = useAuthStore();
   const isHR = !!user && HR_ROLES.includes(user.role);
 
   const [employees, setEmployees] = useState<EmployeePublic[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  // page-search employee resolver
+  useEffect(() => {
+    const q = pageSearchQuery.trim().toLowerCase();
+
+    if (!q) return;
+
+    const match = employees.find((employee) => {
+      const haystack = [
+        employee.full_name,
+        employee.department,
+        employee.designation,
+        employee.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(q);
+    });
+
+    if (match && match.id !== selectedEmployeeId) {
+      setSelectedEmployeeId(match.id);
+    }
+  }, [pageSearchQuery, employees, selectedEmployeeId]);
+
   const [data, setData] = useState<InsuranceFull | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

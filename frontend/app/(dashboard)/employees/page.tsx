@@ -10,15 +10,16 @@ import { Loader } from "@/components/common/Loader";
 import { AddEmployeeModal } from "@/components/employees/AddEmployeeModal";
 import { ImportEmployeesModal } from "@/components/employees/ImportEmployeesModal";
 import { employeeService } from "@/services/employee.service";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 import type { EmployeePublic } from "@/types";
 
 export default function EmployeesPage() {
   const router = useRouter();
+  const { query, setQuery } = usePageSearch();
   const [employees, setEmployees] = useState<EmployeePublic[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [query, setQuery] = useState("");
   const [department, setDepartment] = useState("all");
   const [status, setStatus] = useState("all");
   const [selected, setSelected] = useState<string[]>([]);
@@ -55,7 +56,7 @@ export default function EmployeesPage() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
             <Search size={17} className="text-gray-400" />
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search name, department, designation or status..." className="w-full bg-transparent text-sm outline-none" />
+            
             {query && <button onClick={() => setQuery("")}><X size={15} className="text-gray-400" /></button>}
           </div>
           <div className="flex flex-wrap gap-2">

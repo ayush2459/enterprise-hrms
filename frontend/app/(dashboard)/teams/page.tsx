@@ -10,6 +10,7 @@ import { AddEmployeeModal } from "@/components/employees/AddEmployeeModal";
 import { employeeService } from "@/services/employee.service";
 import { teamService } from "@/services/team.service";
 import type { EmployeePublic, OrgSnippet, TeamMember, TeamStatusRow } from "@/types";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-green-50 text-green-700",
@@ -138,6 +139,7 @@ function SiblingConnectors({ count }: { count: number }) {
 }
 
 export default function TeamsPage() {
+  const { query: pageSearchQuery } = usePageSearch();
   const [employees, setEmployees] = useState<EmployeePublic[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
   const [org, setOrg] = useState<OrgSnippet | null>(null);
@@ -217,6 +219,16 @@ export default function TeamsPage() {
 
   const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId);
 
+  const searchFilteredEmployees = employees.filter((e) => {
+    const q = pageSearchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return [e.full_name, e.department, e.designation, e.status]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
+  });
+
   const selfMember: TeamMember | null = selectedEmployee
     ? {
         id: selectedEmployee.id,
@@ -248,7 +260,7 @@ export default function TeamsPage() {
               onChange={(e) => setSelectedEmployeeId(e.target.value)}
               className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
             >
-              {employees.map((emp) => (
+              {searchFilteredEmployees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.full_name}
                 </option>

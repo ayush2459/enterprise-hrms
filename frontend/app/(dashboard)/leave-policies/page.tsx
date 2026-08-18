@@ -10,10 +10,12 @@ import { AddLeaveTypeModal } from "@/components/leaves/AddLeaveTypeModal";
 import { leaveService } from "@/services/leave.service";
 import { useAuthStore } from "@/store/auth.store";
 import type { LeaveType } from "@/types";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 
 const HR_ROLES = ["hr_admin", "hr_executive", "system_admin"];
 
 export default function LeavePoliciesPage() {
+  const { query: pageSearchQuery } = usePageSearch();
   const { user } = useAuthStore();
   const isHR = !!user && HR_ROLES.includes(user.role);
 
@@ -40,7 +42,20 @@ export default function LeavePoliciesPage() {
     load();
   }, []);
 
-  const activeLeaveTypes = leaveTypes.filter((lt) => lt.is_active);
+  const q = pageSearchQuery.trim().toLowerCase();
+
+  const filteredLeaveTypes = leaveTypes.filter((lt) => {
+    if (!q) return true;
+    return [
+      lt.name,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
+  });
+
+  const activeLeaveTypes = filteredLeaveTypes.filter((lt) => lt.is_active);
 
   if (!isHR) {
     return (
@@ -120,7 +135,7 @@ export default function LeavePoliciesPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {leaveTypes.map((lt) => (
+              {filteredLeaveTypes.map((lt) => (
                 <Card
                   key={lt.id}
                   className={[
