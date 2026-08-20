@@ -7,12 +7,18 @@ filtering happens in app/schemas + app/services, not here.
 import uuid
 from datetime import date
 
-from sqlalchemy import Date, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, Enum, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDPkMixin
-from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, SelectionStatus
+from app.models.enums import (
+    ConversionStatus,
+    EmployeeStatus,
+    EmploymentType,
+    OffboardReason,
+    SelectionStatus,
+)
 
 
 class Employee(Base, UUIDPkMixin, TimestampMixin):
@@ -40,6 +46,14 @@ class Employee(Base, UUIDPkMixin, TimestampMixin):
         Enum(ConversionStatus, name="conversion_status_enum"), default=ConversionStatus.NOT_APPLICABLE
     )
 
+    # Offboarding — who left, why, and when. Kept on the record (rather than
+    # hard-deleted) so a "people who left" view stays possible; active
+    # lists/dashboard counts filter status != OFFBOARDED instead.
+    offboard_reason: Mapped[OffboardReason | None] = mapped_column(
+        Enum(OffboardReason, name="offboard_reason_enum"), nullable=True
+    )
+    offboarded_at: Mapped[date | None] = mapped_column(Date, nullable=True)
+
     # ---- Sensitive / access-restricted fields (Section 3, Section 6) ----
     date_of_birth: Mapped[date | None] = mapped_column(Date, nullable=True)
     gender: Mapped[str | None] = mapped_column(String(30), nullable=True)
@@ -47,6 +61,25 @@ class Employee(Base, UUIDPkMixin, TimestampMixin):
     blood_group: Mapped[str | None] = mapped_column(String(5), nullable=True)
     emergency_contact: Mapped[str | None] = mapped_column(String(50), nullable=True)
     personal_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    mobile_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    # Banking / statutory — the most sensitive fields on this record. Same
+    # visibility rule as the rest of this block (HR Admin/Executive/System
+    # Admin, or the employee themself) — never shown in the public directory.
+    bank_account_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    bank_ifsc: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    pf_number: Mapped[str | None] = mapped_column(String(40), nullable=True)
+
+    # HR process/checklist tracking used by Smart Dashboard alerts.
+    offer_letter_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    onboarding_email_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    appraisal_letter_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    bonus_payout_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    promotion_letter_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    resignation_email_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    resignation_acceptance_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    experience_relieving_letter_status: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
     selection_status: Mapped[SelectionStatus] = mapped_column(
         Enum(SelectionStatus, name="selection_status_enum"), default=SelectionStatus.JOINED
@@ -54,14 +87,6 @@ class Employee(Base, UUIDPkMixin, TimestampMixin):
     status: Mapped[EmployeeStatus] = mapped_column(
         Enum(EmployeeStatus, name="employee_status_enum"), default=EmployeeStatus.ACTIVE
     )
-
-    # ---- Offboarding (resigned / terminated) ----
-    # Populated only once the employee has left; stays null for everyone
-    # currently active. Kept on the row (soft-separation, not a hard
-    # delete) so the "people who left" list on the dashboard has
-    # something to show and history isn't destroyed by an offboard.
-    separation_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    separation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     reporting_manager_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("employees.id", ondelete="SET NULL"), nullable=True
@@ -71,6 +96,13 @@ class Employee(Base, UUIDPkMixin, TimestampMixin):
     manager: Mapped["Employee | None"] = relationship(
         remote_side="Employee.id", foreign_keys=[reporting_manager_id]
     )
+
+    @property
+    def employee_id(self) -> str | None:
+        """The human-readable Employee Number (e.g. "001"), stored on the
+        linked User row. Requires `user` to be loaded — repository queries
+        eager-load it so this is always safe to read."""
+        return self.user.employee_id if self.user is not None else None
 
     def __repr__(self) -> str:
         return f"<Employee {self.full_name}>"

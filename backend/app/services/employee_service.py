@@ -7,13 +7,11 @@ from datetime import date
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
 from app.models.employee import Employee
-from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, RoleEnum
-from app.models.refresh_token import RefreshToken
+from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, OffboardReason, RoleEnum
 from app.models.user import User
 from app.repositories.employee_repository import EmployeeRepository
 from app.repositories.user_repository import UserRepository
@@ -24,14 +22,12 @@ from app.schemas.employee import (
     EmployeeReadPublic,
     EmployeeStats,
     EmployeeUpdate,
-    OffboardRequest,
-    SeparatedEmployee,
+    OffboardedEmployee,
 )
 from app.services.audit_service import AuditService
 from app.utils.password_generator import generate_temp_password
 
 FULL_ACCESS_ROLES = {RoleEnum.HR_ADMIN, RoleEnum.HR_EXECUTIVE, RoleEnum.SYSTEM_ADMIN}
-STATUS_MAP = {"resigned": EmployeeStatus.RESIGNED, "terminated": EmployeeStatus.TERMINATED}
 
 
 class EmployeeService:
@@ -56,9 +52,23 @@ class EmployeeService:
         await self.audit.log(requester.id, "employee_view_public", "employee", str(employee.id))
         return EmployeeReadPublic.model_validate(employee)
 
-    async def list_directory(self, skip: int, limit: int) -> list[EmployeeReadPublic]:
-        employees = await self.repo.list_all(skip, limit)
+    async def list_directory(
+        self, skip: int, limit: int, include_separated: bool = False
+    ) -> list[EmployeeReadPublic]:
+        employees = await self.repo.list_all(skip, limit, include_separated=include_separated)
         return [EmployeeReadPublic.model_validate(e) for e in employees]
+
+    async def list_offboarded(
+        self, skip: int = 0, limit: int = 50
+    ) -> list[EmployeeReadPublic]:
+        employees = await self.repo.list_offboarded(
+            skip=skip,
+            limit=limit,
+        )
+        return [
+            EmployeeReadPublic.model_validate(employee)
+            for employee in employees
+        ]
 
     async def get_stats(self) -> EmployeeStats:
         total = await self.repo.count_total()
@@ -122,9 +132,18 @@ class EmployeeService:
         if not is_privileged and not is_self:
             data = {}  # no write access at all
         elif not is_privileged and is_self:
-            # Employees may only edit their own contact-type fields, not
-            # org fields like department/designation/manager.
-            allowed = {"personal_address", "emergency_contact", "personal_email"}
+            # Employees may only edit their own contact/banking-type fields,
+            # not org fields like department/designation/manager.
+            allowed = {
+                "personal_address",
+                "emergency_contact",
+                "personal_email",
+                "mobile_number",
+                "bank_account_number",
+                "bank_ifsc",
+                "bank_name",
+                "pf_number",
+            }
             data = {k: v for k, v in data.items() if k in allowed}
 
         for field, value in data.items():
@@ -208,79 +227,119 @@ class EmployeeService:
         return employee
 
     async def offboard_employee(
-        self, employee: Employee, payload: OffboardRequest, requester: User
+        self,
+        employee: Employee,
+        reason: OffboardReason,
+        requester: User,
     ) -> Employee:
-        """Marks an employee as resigned or terminated. This is the one
-        place that takes someone off the active roster: it flips their
-        status (so they drop out of the directory and dashboard counts,
-        which both filter on SEPARATED_STATUSES), locks their login by
-        deactivating their user account, and revokes any refresh tokens
-        so an already-issued session can't keep working."""
+        """Move an employee into the canonical OFFBOARDED state."""
+
         if requester.role not in FULL_ACCESS_ROLES:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only HR Admin, HR Executive, or System Admin can offboard an employee.",
+                detail=(
+                    "Only HR Admin, HR Executive, or System Admin "
+                    "can offboard an employee."
+                ),
             )
 
-        if employee.status in (EmployeeStatus.RESIGNED, EmployeeStatus.TERMINATED):
+        if employee.status == EmployeeStatus.OFFBOARDED:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"This employee is already marked as {employee.status.value}.",
+                detail="This employee has already been offboarded.",
             )
 
-        new_status = STATUS_MAP[payload.status]
-        employee.status = new_status
-        employee.separation_date = payload.effective_date or date.today()
-        employee.separation_reason = payload.reason
+        employee.status = EmployeeStatus.OFFBOARDED
 
-        user = await self.users.get_by_id(employee.user_id)
-        if user is not None:
-            user.is_active = False
-            await self.users.save(user)
-            await self.db.execute(
-                update(RefreshToken)
-                .where(RefreshToken.user_id == user.id, RefreshToken.revoked.is_(False))
-                .values(revoked=True)
+        # Map API reasons ("resigned"/"terminated") to the PostgreSQL
+        # offboard_reason_enum values ("RESIGNATION"/"TERMINATION").
+        if isinstance(reason, str):
+            reason_value = reason.lower()
+        else:
+            reason_value = reason.value.lower()
+
+        reason_map = {
+            "resigned": OffboardReason.RESIGNATION,
+            "resignation": OffboardReason.RESIGNATION,
+            "terminated": OffboardReason.TERMINATION,
+            "termination": OffboardReason.TERMINATION,
+            "contract_end": OffboardReason.CONTRACT_END,
+            "retirement": OffboardReason.RETIREMENT,
+            "abandonment": OffboardReason.ABANDONMENT,
+            "other": OffboardReason.OTHER,
+        }
+
+        mapped_reason = reason_map.get(reason_value)
+
+        if mapped_reason is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unsupported offboarding reason: {reason_value}",
             )
+
+        employee.offboard_reason = mapped_reason
+        employee.offboarded_at = date.today()
+
+        # Remove manager relationships from direct reports.
+        reports = await self.repo.list_direct_reports(employee.id)
+
+        for report in reports:
+            report.reporting_manager_id = None
+
+        # Disable the employee's login.
+        employee_user = await self.users.get_by_id(employee.user_id)
+        if employee_user is not None:
+            employee_user.is_active = False
 
         await self.repo.save(employee)
+
         await self.audit.log(
             requester.id,
             "employee_offboard",
             "employee",
             str(employee.id),
-            detail=payload.status,
+            detail=reason.value,
         )
+
         return employee
 
-    async def reactivate_employee(self, employee: Employee, requester: User) -> Employee:
-        """Undo an offboard — brings someone back onto the active roster
-        and restores their login. Useful for a mis-click or a rehire."""
+    async def reactivate_employee(
+        self,
+        employee: Employee,
+        requester: User,
+    ) -> Employee:
+        """Restore an offboarded employee to the active roster."""
+
         if requester.role not in FULL_ACCESS_ROLES:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only HR Admin, HR Executive, or System Admin can reactivate an employee.",
+                detail=(
+                    "Only HR Admin, HR Executive, or System Admin "
+                    "can reactivate an employee."
+                ),
             )
 
-        if employee.status not in (EmployeeStatus.RESIGNED, EmployeeStatus.TERMINATED):
+        if employee.status != EmployeeStatus.OFFBOARDED:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="This employee is not currently marked as separated.",
+                detail="This employee is not offboarded.",
             )
 
         employee.status = EmployeeStatus.ACTIVE
-        employee.separation_date = None
-        employee.separation_reason = None
+        employee.offboard_reason = None
+        employee.offboarded_at = None
 
-        user = await self.users.get_by_id(employee.user_id)
-        if user is not None:
-            user.is_active = True
-            await self.users.save(user)
+        employee_user = await self.users.get_by_id(employee.user_id)
+        if employee_user is not None:
+            employee_user.is_active = True
 
         await self.repo.save(employee)
-        await self.audit.log(requester.id, "employee_reactivate", "employee", str(employee.id))
-        return employee
 
-    async def list_separated(self, skip: int, limit: int) -> list[SeparatedEmployee]:
-        employees = await self.repo.list_separated(skip, limit)
-        return [SeparatedEmployee.model_validate(e) for e in employees]
+        await self.audit.log(
+            requester.id,
+            "employee_reactivate",
+            "employee",
+            str(employee.id),
+        )
+
+        return employee

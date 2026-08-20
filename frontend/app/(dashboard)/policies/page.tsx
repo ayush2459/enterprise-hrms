@@ -11,6 +11,7 @@ import { ComplianceModal } from "@/components/policies/ComplianceModal";
 import { policyService } from "@/services/policy.service";
 import { useAuthStore } from "@/store/auth.store";
 import type { PolicyWithAck } from "@/types";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 
 const HR_ROLES = ["hr_admin", "hr_executive", "system_admin"];
 
@@ -21,6 +22,7 @@ function formatSize(bytes: number) {
 }
 
 export default function PoliciesPage() {
+  const { query: pageSearchQuery } = usePageSearch();
   const { user } = useAuthStore();
   const isHR = !!user && HR_ROLES.includes(user.role);
 
@@ -60,7 +62,17 @@ export default function PoliciesPage() {
     }
   };
 
-  const groupedByCategory = policies.reduce<Record<string, PolicyWithAck[]>>((acc, p) => {
+  const filteredPolicies = policies.filter((p) => {
+    const q = pageSearchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return [p.title, p.category]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
+  });
+
+  const groupedByCategory = filteredPolicies.reduce<Record<string, PolicyWithAck[]>>((acc, p) => {
     (acc[p.category] ??= []).push(p);
     return acc;
   }, {});

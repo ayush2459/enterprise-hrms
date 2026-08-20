@@ -24,6 +24,7 @@ from app.schemas.dashboard import (
     PolicyUpdate,
     RecentJoiner,
     SeparatedEmployeeSummary,
+    SmartAlert,
     UpcomingEvent,
 )
 
@@ -95,8 +96,8 @@ class DashboardService:
                 designation=e.designation,
                 department=e.department,
                 status=e.status,
-                separation_date=e.separation_date,
-                separation_reason=e.separation_reason,
+                separation_date=e.offboarded_at,
+                separation_reason=e.offboard_reason.value if e.offboard_reason else None,
             )
             for e in separated_rows
         ]
@@ -157,6 +158,217 @@ class DashboardService:
             )
         upcoming_events.sort(key=lambda ev: ev.event_date)
 
+        # ---- Smart alerts: rule-based HR nudges computed from live data ----
+        # These use existing HRMS records; no external AI calls are required.
+        all_separated = await self.employees.list_offboarded(skip=0, limit=10_000)
+
+        smart_alerts: list[SmartAlert] = []
+
+        incomplete_bank_pf = sum(
+            1
+            for e in all_employees
+            if not e.bank_account_number or not e.pf_number
+        )
+        if incomplete_bank_pf:
+            bank_pf_employees = [
+                e for e in all_employees
+                if not e.bank_account_number or not e.pf_number
+            ]
+            bank_pf_link = (
+                f"/employees/{bank_pf_employees[0].id}"
+                if len(bank_pf_employees) == 1
+                else "/employees"
+            )
+
+            smart_alerts.append(
+                SmartAlert(
+                    severity="warning",
+                    message=(
+                        f"{incomplete_bank_pf} active employee"
+                        f"{'s' if incomplete_bank_pf != 1 else ''} "
+                        "missing bank or PF details"
+                    ),
+                    count=incomplete_bank_pf,
+                    link=bank_pf_link,
+                )
+            )
+
+        recent_joiners_missing_offer = sum(
+            1
+            for e in all_employees
+            if (
+                e.date_of_joining
+                and e.date_of_joining >= thirty_days_ago
+                and not (
+                    e.offer_letter_status
+                    and "received" in e.offer_letter_status.lower()
+                )
+            )
+        )
+        if recent_joiners_missing_offer:
+            recent_joiners_missing_offer_employees = [
+                e for e in all_employees
+                if (
+                    e.date_of_joining
+                    and e.date_of_joining >= thirty_days_ago
+                    and not (
+                        e.offer_letter_status
+                        and "received" in e.offer_letter_status.lower()
+                    )
+                )
+            ]
+
+            offer_link = (
+                f"/employees/{recent_joiners_missing_offer_employees[0].id}"
+                if len(recent_joiners_missing_offer_employees) == 1
+                else "/employees"
+            )
+
+            smart_alerts.append(
+                SmartAlert(
+                    severity="warning",
+                    message=(
+                        f"{recent_joiners_missing_offer} recent joiner"
+                        f"{'s' if recent_joiners_missing_offer != 1 else ''} "
+                        "without a confirmed offer letter on file"
+                    ),
+                    count=recent_joiners_missing_offer,
+                    link=offer_link,
+                )
+            )
+
+        pending_relieving_letters = sum(
+            1
+            for e in all_separated
+            if not (
+                e.experience_relieving_letter_status
+                and "sent" in e.experience_relieving_letter_status.lower()
+            )
+        )
+        if pending_relieving_letters:
+            relieving_employees = [
+                e for e in all_separated
+                if not (
+                    e.experience_relieving_letter_status
+                    and "sent" in e.experience_relieving_letter_status.lower()
+                )
+            ]
+
+            relieving_link = (
+                f"/employees/{relieving_employees[0].id}"
+                if len(relieving_employees) == 1
+                else "/employees/former"
+            )
+
+            smart_alerts.append(
+                SmartAlert(
+                    severity="critical",
+                    message=(
+                        f"{pending_relieving_letters} former employee"
+                        f"{'s' if pending_relieving_letters != 1 else ''} "
+                        "still missing an experience/relieving letter"
+                    ),
+                    count=pending_relieving_letters,
+                    link=relieving_link,
+                )
+            )
+
+        pending_resignation_acceptance = sum(
+            1
+            for e in all_separated
+            if not (
+                e.resignation_acceptance_status
+                and e.resignation_acceptance_status.strip()
+            )
+        )
+        if pending_resignation_acceptance:
+            resignation_employees = [
+                e for e in all_separated
+                if not (
+                    e.resignation_acceptance_status
+                    and e.resignation_acceptance_status.strip()
+                )
+            ]
+
+            resignation_link = (
+                f"/employees/{resignation_employees[0].id}"
+                if len(resignation_employees) == 1
+                else "/employees/former"
+            )
+
+            smart_alerts.append(
+                SmartAlert(
+                    severity="warning",
+                    message=(
+                        f"{pending_resignation_acceptance} resignation"
+                        f"{'s' if pending_resignation_acceptance != 1 else ''} "
+                        "pending formal acceptance"
+                    ),
+                    count=pending_resignation_acceptance,
+                    link=resignation_link,
+                )
+            )
+
+        if pending_bgv:
+            smart_alerts.append(
+                SmartAlert(
+                    severity="warning",
+                    message=(
+                        f"{pending_bgv} background check"
+                        f"{'s' if pending_bgv != 1 else ''} still pending"
+                    ),
+                    count=pending_bgv,
+                    link="/background-check",
+                )
+            )
+
+        if pending_doc_verifications:
+            smart_alerts.append(
+                SmartAlert(
+                    severity="info",
+                    message=(
+                        f"{pending_doc_verifications} document"
+                        f"{'s' if pending_doc_verifications != 1 else ''} "
+                        "awaiting verification"
+                    ),
+                    count=pending_doc_verifications,
+                    link="/documents",
+                )
+            )
+
+        if pending_leave_requests:
+            smart_alerts.append(
+                SmartAlert(
+                    severity="info",
+                    message=(
+                        f"{pending_leave_requests} leave request"
+                        f"{'s' if pending_leave_requests != 1 else ''} "
+                        "awaiting approval"
+                    ),
+                    count=pending_leave_requests,
+                    link="/leaves",
+                )
+            )
+
+        if insurance_pending:
+            smart_alerts.append(
+                SmartAlert(
+                    severity="info",
+                    message=(
+                        f"{insurance_pending} employee"
+                        f"{'s' if insurance_pending != 1 else ''} "
+                        "without an insurance policy on file"
+                    ),
+                    count=insurance_pending,
+                    link="/insurance",
+                )
+            )
+
+        severity_rank = {"critical": 0, "warning": 1, "info": 2}
+        smart_alerts.sort(
+            key=lambda alert: severity_rank.get(alert.severity, 3)
+        )
+
         return DashboardSummary(
             total_employees=total_employees,
             active_today=active_today,
@@ -178,4 +390,5 @@ class DashboardService:
             ),
             policy_updates=policy_updates,
             upcoming_events=upcoming_events[:10],
+            smart_alerts=smart_alerts,
         )

@@ -1,0 +1,756 @@
+/* ═══════════════════════════════════════════════════════════
+   HRHub Enterprise — Keka-grade visual layer
+   Upgrades look + feel. Zero JS, zero backend changes.
+   ═══════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ── Design tokens ────────────────────────────────────────── */
+:root {
+  --k-bg:        #f4f6fb;
+  --k-surface:   #ffffff;
+  --k-border:    #e4e9f2;
+  --k-border-hv: #c9d3e8;
+  --k-text:      #111827;
+  --k-text-2:    #4b5563;
+  --k-text-3:    #9ca3af;
+  --k-brand:     #2563eb;
+  --k-brand-dk:  #1d4ed8;
+  --k-brand-bg:  #eff6ff;
+  --k-success:   #16a34a;
+  --k-warn:      #d97706;
+  --k-danger:    #dc2626;
+  --k-radius:    10px;
+  --k-radius-lg: 14px;
+  --k-shadow-sm: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+  --k-shadow-md: 0 4px 16px rgba(15,23,42,.08), 0 1px 4px rgba(15,23,42,.04);
+  --k-shadow-lg: 0 12px 32px rgba(15,23,42,.12), 0 2px 8px rgba(15,23,42,.06);
+}
+
+/* ── Base ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { font-size: 14px; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  background: var(--k-bg) !important;
+  color: var(--k-text) !important;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* ── Scrollbars ───────────────────────────────────────────── */
+* { scrollbar-width: thin; scrollbar-color: #d1d5db transparent; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 99px; }
+
+/* ══════════════════════════════════════════════════════════
+   SIDEBAR
+   ══════════════════════════════════════════════════════════ */
+aside.sticky {
+  background: linear-gradient(180deg, #1a2744 0%, #172040 100%) !important;
+  border-right: 1px solid rgba(255,255,255,.06) !important;
+  box-shadow: 4px 0 20px rgba(10,15,35,.18) !important;
+  width: 232px !important;
+}
+
+/* Logo area */
+aside.sticky a[href="/dashboard"] {
+  gap: 10px !important;
+}
+
+aside.sticky a[href="/dashboard"] > div:first-child {
+  border-radius: 10px !important;
+  background: var(--k-brand) !important;
+  color: #fff !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em;
+  box-shadow: 0 4px 12px rgba(37,99,235,.4) !important;
+}
+
+/* Nav section labels */
+aside.sticky nav p {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: .1em !important;
+  color: rgba(255,255,255,.28) !important;
+  padding-left: 10px !important;
+}
+
+/* Nav links */
+aside.sticky nav a {
+  border-radius: 8px !important;
+  padding: 8px 10px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: rgba(255,255,255,.6) !important;
+  transition: all .14s ease !important;
+  margin: 1px 0 !important;
+}
+
+aside.sticky nav a:hover {
+  background: rgba(255,255,255,.07) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+
+aside.sticky nav a.bg-white\/15 {
+  background: rgba(37,99,235,.3) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  box-shadow: inset 0 0 0 1px rgba(37,99,235,.4) !important;
+}
+
+/* Active dot */
+aside.sticky nav a.bg-white\/15 span.rounded-full {
+  background: #60a5fa !important;
+  width: 5px !important;
+  height: 5px !important;
+}
+
+/* Dividers */
+aside.sticky .h-px { background: rgba(255,255,255,.07) !important; }
+
+/* Company selector */
+aside.sticky button.rounded-xl {
+  border-radius: 10px !important;
+  background: rgba(255,255,255,.06) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+  transition: background .14s !important;
+}
+aside.sticky button.rounded-xl:hover { background: rgba(255,255,255,.1) !important; }
+
+/* Bottom user area */
+aside.sticky > div:last-child {
+  border-top: 1px solid rgba(255,255,255,.07) !important;
+}
+aside.sticky > div:last-child > div {
+  background: rgba(255,255,255,.05) !important;
+  border-radius: 10px !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TOPBAR
+   ══════════════════════════════════════════════════════════ */
+header.sticky {
+  background: var(--k-surface) !important;
+  border-bottom: 1px solid var(--k-border) !important;
+  height: 60px !important;
+  box-shadow: 0 1px 0 var(--k-border), var(--k-shadow-sm) !important;
+}
+
+header.sticky h1 {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.025em !important;
+  color: var(--k-text) !important;
+}
+
+header.sticky p {
+  font-size: 11px !important;
+  color: var(--k-text-3) !important;
+}
+
+/* Topbar icon buttons */
+header.sticky button {
+  border-radius: 8px !important;
+  transition: background .13s, color .13s !important;
+}
+
+header.sticky button:hover {
+  background: var(--k-bg) !important;
+}
+
+/* Profile pill */
+header.sticky button.rounded-lg.px-2 {
+  border-radius: 8px !important;
+  padding: 5px 8px !important;
+}
+
+header.sticky button.rounded-lg.px-2:hover {
+  background: #f1f5f9 !important;
+}
+
+/* Profile avatar */
+header.sticky .rounded-full.bg-blue-100 {
+  background: var(--k-brand-bg) !important;
+  color: var(--k-brand) !important;
+  font-weight: 700 !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   COMMAND CENTER BANNER
+   ══════════════════════════════════════════════════════════ */
+section.border-b {
+  background: #f7f9fd !important;
+  border-bottom: 1px solid var(--k-border) !important;
+  padding: 16px 24px 14px !important;
+}
+
+/* Hero gradient card */
+section.border-b > div:first-child {
+  border-radius: 16px !important;
+  padding: 18px 22px !important;
+  box-shadow: 0 4px 24px rgba(15,23,42,.12) !important;
+}
+
+/* Metric mini-cards */
+section.border-b .rounded-2xl.border {
+  border-radius: 10px !important;
+  border: 1px solid var(--k-border) !important;
+  background: var(--k-surface) !important;
+  box-shadow: var(--k-shadow-sm) !important;
+  padding: 12px 14px !important;
+  transition: box-shadow .16s, border-color .16s, transform .16s !important;
+}
+
+section.border-b .rounded-2xl.border:hover {
+  border-color: var(--k-border-hv) !important;
+  box-shadow: var(--k-shadow-md) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* View tabs bar */
+section.border-b > div:last-child {
+  border-radius: 10px !important;
+  border: 1px solid var(--k-border) !important;
+  background: var(--k-surface) !important;
+  box-shadow: var(--k-shadow-sm) !important;
+  padding: 6px !important;
+}
+
+/* Search area inside tabs bar */
+section.border-b > div:last-child > div:first-child {
+  border-radius: 7px !important;
+  background: var(--k-bg) !important;
+  padding: 7px 12px !important;
+}
+
+/* Tab buttons */
+section.border-b button.rounded-lg {
+  border-radius: 7px !important;
+  font-size: 11px !important;
+  padding: 7px 14px !important;
+  font-weight: 600 !important;
+  transition: background .13s, color .13s !important;
+}
+
+section.border-b button.bg-slate-900 {
+  background: var(--k-brand) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(37,99,235,.25) !important;
+}
+
+section.border-b button.text-slate-500:hover {
+  background: var(--k-bg) !important;
+  color: var(--k-text) !important;
+}
+
+/* Primary CTA in hero */
+section.border-b > div:first-child button {
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 9px 18px !important;
+  background: #fff !important;
+  color: #111 !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,.12) !important;
+  transition: box-shadow .15s, transform .15s !important;
+}
+
+section.border-b > div:first-child button:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,.16) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PAGE CONTENT AREA
+   ══════════════════════════════════════════════════════════ */
+main > div.space-y-6,
+main > div.p-8,
+main > div.space-y-6.p-8 {
+  padding: 24px !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CARDS
+   ══════════════════════════════════════════════════════════ */
+main .rounded-xl.border,
+main .rounded-2xl.border,
+main .rounded-lg.border,
+main .rounded-xl.bg-white,
+main .rounded-2xl.bg-white {
+  border-color: var(--k-border) !important;
+  background: var(--k-surface) !important;
+  border-radius: var(--k-radius-lg) !important;
+  box-shadow: var(--k-shadow-sm) !important;
+  transition: box-shadow .18s, border-color .18s !important;
+}
+
+main .rounded-xl.border:hover,
+main .rounded-2xl.border:hover {
+  border-color: var(--k-border-hv) !important;
+  box-shadow: var(--k-shadow-md) !important;
+}
+
+/* Metric / stat cards */
+main .rounded-xl.border.p-4,
+main .rounded-2xl.border.p-4 {
+  padding: 18px 20px !important;
+}
+
+main .rounded-xl.border.p-4 > div.rounded-xl,
+main .rounded-2xl.border.p-4 > div.rounded-xl {
+  border-radius: 8px !important;
+  padding: 8px !important;
+  background: var(--k-bg) !important;
+}
+
+main .text-2xl.font-semibold {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.02em !important;
+  color: var(--k-text) !important;
+}
+
+/* ── Card inner headings ─────────────────────────── */
+main .text-sm.font-semibold.text-gray-900 {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--k-text) !important;
+}
+
+main .text-xs.text-gray-400 {
+  font-size: 11px !important;
+  color: var(--k-text-3) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TABLES
+   ══════════════════════════════════════════════════════════ */
+main table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  width: 100% !important;
+}
+
+main table thead tr {
+  background: #f8fafc !important;
+}
+
+main table thead th {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: .06em !important;
+  text-transform: uppercase !important;
+  color: var(--k-text-3) !important;
+  padding: 11px 16px !important;
+  border-bottom: 1px solid var(--k-border) !important;
+  white-space: nowrap !important;
+}
+
+main table thead th:first-child { border-radius: var(--k-radius) 0 0 0 !important; padding-left: 20px !important; }
+main table thead th:last-child  { border-radius: 0 var(--k-radius) 0 0 !important; }
+
+main table tbody tr {
+  transition: background .13s !important;
+}
+
+main table tbody tr:hover td {
+  background: #f8fbff !important;
+}
+
+main table tbody td {
+  font-size: 13px !important;
+  color: var(--k-text-2) !important;
+  padding: 13px 16px !important;
+  border-bottom: 1px solid var(--k-border) !important;
+}
+
+main table tbody td:first-child { padding-left: 20px !important; color: var(--k-text) !important; font-weight: 500 !important; }
+main table tbody tr:last-child td { border-bottom: none !important; }
+
+/* Clickable rows */
+main table tbody tr.cursor-pointer { cursor: pointer !important; }
+
+/* Checkboxes in table */
+main table input[type="checkbox"] {
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 4px !important;
+  accent-color: var(--k-brand) !important;
+  cursor: pointer !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BADGES / STATUS PILLS
+   ══════════════════════════════════════════════════════════ */
+main .rounded-full.px-2\.5,
+main .rounded-full.px-2,
+main [class*="rounded-full"][class*="text-"][class*="bg-"] {
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  padding: 3px 9px !important;
+  border-radius: 20px !important;
+  letter-spacing: .01em !important;
+}
+
+/* Status colour overrides */
+main .bg-green-50 { background: #f0fdf4 !important; }
+main .text-green-700 { color: #15803d !important; }
+main .bg-amber-50 { background: #fffbeb !important; }
+main .text-amber-700 { color: #b45309 !important; }
+main .bg-red-50 { background: #fef2f2 !important; }
+main .text-red-700 { color: #b91c1c !important; }
+main .bg-blue-50 { background: #eff6ff !important; }
+main .text-blue-700 { color: #1d4ed8 !important; }
+main .bg-gray-100 { background: #f3f4f6 !important; }
+main .text-gray-600 { color: #4b5563 !important; }
+main .bg-purple-50 { background: #faf5ff !important; }
+main .text-purple-700 { color: #7e22ce !important; }
+
+/* ══════════════════════════════════════════════════════════
+   BUTTONS
+   ══════════════════════════════════════════════════════════ */
+main button,
+main a[class*="button"] {
+  font-family: inherit !important;
+  font-weight: 500 !important;
+  transition: all .15s ease !important;
+}
+
+/* Primary */
+main button.bg-brand,
+main button.bg-blue-600,
+main button[class*="bg-brand"]:not([class*="bg-brand/"])  {
+  background: var(--k-brand) !important;
+  color: #fff !important;
+  border-radius: 8px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  padding: 8px 16px !important;
+  box-shadow: 0 2px 8px rgba(37,99,235,.22) !important;
+  border: none !important;
+}
+
+main button.bg-brand:hover,
+main button.bg-blue-600:hover {
+  background: var(--k-brand-dk) !important;
+  box-shadow: 0 4px 14px rgba(37,99,235,.32) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Secondary / ghost */
+main button.border.border-gray-200,
+main button.rounded-xl.border {
+  border-color: var(--k-border) !important;
+  border-radius: 8px !important;
+  font-size: 12.5px !important;
+  color: var(--k-text-2) !important;
+  background: var(--k-surface) !important;
+  padding: 7px 14px !important;
+  box-shadow: var(--k-shadow-sm) !important;
+}
+
+main button.border.border-gray-200:hover,
+main button.rounded-xl.border:hover {
+  background: var(--k-bg) !important;
+  border-color: var(--k-border-hv) !important;
+  color: var(--k-text) !important;
+}
+
+/* Danger */
+main button.text-red-600 {
+  color: var(--k-danger) !important;
+}
+main button.text-red-600:hover {
+  background: #fef2f2 !important;
+}
+
+/* Disabled */
+main button:disabled {
+  opacity: .45 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   FORM CONTROLS
+   ══════════════════════════════════════════════════════════ */
+main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+main select,
+main textarea {
+  border: 1px solid var(--k-border) !important;
+  border-radius: 8px !important;
+  background: var(--k-surface) !important;
+  color: var(--k-text) !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  padding: 8px 12px !important;
+  transition: border-color .15s, box-shadow .15s !important;
+  outline: none !important;
+}
+
+main input:not([type="checkbox"]):not([type="radio"]):focus,
+main select:focus,
+main textarea:focus {
+  border-color: #93b4f8 !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important;
+}
+
+main select {
+  appearance: auto !important;
+  padding-right: 28px !important;
+  cursor: pointer !important;
+}
+
+/* Search input wrappers */
+main .rounded-xl.border.bg-gray-50,
+main .rounded-xl.bg-gray-50 {
+  border-color: var(--k-border) !important;
+  background: var(--k-bg) !important;
+  border-radius: 9px !important;
+}
+
+/* Labels */
+main label {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--k-text-2) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PROGRESS BARS
+   ══════════════════════════════════════════════════════════ */
+main .h-2.rounded-full,
+main .h-3.rounded-full {
+  background: #e5e7eb !important;
+  border-radius: 99px !important;
+  overflow: hidden !important;
+}
+
+main .h-2.rounded-full > div,
+main .h-3.rounded-full > div {
+  border-radius: 99px !important;
+  transition: width .4s ease !important;
+}
+
+main .bg-brand { background: var(--k-brand) !important; }
+
+/* ══════════════════════════════════════════════════════════
+   KANBAN COLUMNS (Recruitment)
+   ══════════════════════════════════════════════════════════ */
+main .rounded-2xl.border.bg-gray-50\/60 {
+  background: #f8fafc !important;
+  border-color: var(--k-border) !important;
+  border-radius: 12px !important;
+  padding: 12px !important;
+}
+
+/* Kanban cards */
+main .rounded-xl.border.bg-white.p-3.shadow-sm {
+  border-radius: 10px !important;
+  border-color: var(--k-border) !important;
+  box-shadow: var(--k-shadow-sm) !important;
+  transition: box-shadow .16s, transform .16s !important;
+}
+
+main .rounded-xl.border.bg-white.p-3.shadow-sm:hover {
+  box-shadow: var(--k-shadow-md) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   FILTER TOGGLES (pill tabs inside cards)
+   ══════════════════════════════════════════════════════════ */
+main .rounded-xl.bg-gray-100.p-1 {
+  background: var(--k-bg) !important;
+  border: 1px solid var(--k-border) !important;
+  border-radius: 9px !important;
+  padding: 4px !important;
+}
+
+main .rounded-xl.bg-gray-100.p-1 button {
+  border-radius: 7px !important;
+  font-size: 11.5px !important;
+  padding: 5px 14px !important;
+  font-weight: 500 !important;
+  color: var(--k-text-2) !important;
+}
+
+main .rounded-xl.bg-gray-100.p-1 button.bg-white {
+  background: var(--k-surface) !important;
+  color: var(--k-text) !important;
+  font-weight: 600 !important;
+  box-shadow: var(--k-shadow-sm) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ORG CHART NODES (Teams)
+   ══════════════════════════════════════════════════════════ */
+main .bg-brand.rounded-2xl,
+main .bg-brand-dark.rounded-2xl {
+  border-radius: 12px !important;
+  box-shadow: var(--k-shadow-md) !important;
+}
+
+main .border-2.border-brand.rounded-2xl {
+  border-radius: 12px !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.12), var(--k-shadow-sm) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MODALS / OVERLAYS
+   ══════════════════════════════════════════════════════════ */
+/* Overlay backdrop */
+div[class*="fixed"][class*="inset-0"][class*="bg-black"] {
+  background: rgba(10,15,40,.55) !important;
+  backdrop-filter: blur(3px) !important;
+}
+
+/* Modal panels */
+div[class*="fixed"][class*="inset-0"] > div[class*="bg-white"],
+div[class*="fixed"][class*="inset-0"] > div > div[class*="bg-white"] {
+  border-radius: 16px !important;
+  box-shadow: var(--k-shadow-lg) !important;
+  border: 1px solid var(--k-border) !important;
+}
+
+/* Modal header */
+div[class*="fixed"] h2,
+div[class*="fixed"] h3 {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.02em !important;
+  color: var(--k-text) !important;
+}
+
+/* Inputs inside modals */
+div[class*="fixed"] input,
+div[class*="fixed"] select,
+div[class*="fixed"] textarea {
+  border-radius: 8px !important;
+  border-color: var(--k-border) !important;
+  font-size: 13px !important;
+}
+
+div[class*="fixed"] input:focus,
+div[class*="fixed"] select:focus,
+div[class*="fixed"] textarea:focus {
+  border-color: #93b4f8 !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important;
+}
+
+/* Modal labels */
+div[class*="fixed"] label {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: var(--k-text-2) !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   DROPDOWNS (notifications, profile)
+   ══════════════════════════════════════════════════════════ */
+div.absolute.z-50.rounded-xl.border.bg-white {
+  border-radius: 12px !important;
+  border-color: var(--k-border) !important;
+  box-shadow: var(--k-shadow-lg) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   LOADER
+   ══════════════════════════════════════════════════════════ */
+main [class*="animate-spin"] {
+  color: var(--k-brand) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   EMPTY STATES
+   ══════════════════════════════════════════════════════════ */
+main [class*="text-center"][class*="text-gray-400"] {
+  color: var(--k-text-3) !important;
+  font-size: 13px !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TYPOGRAPHY POLISH
+   ══════════════════════════════════════════════════════════ */
+main h1 {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.03em !important;
+  color: var(--k-text) !important;
+}
+
+main h2 {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.02em !important;
+}
+
+main h3 {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.015em !important;
+}
+
+main p { line-height: 1.55 !important; }
+
+main .text-xs { font-size: 11.5px !important; }
+main .text-sm { font-size: 12.5px !important; }
+
+/* ══════════════════════════════════════════════════════════
+   DASHBOARD SPECIFIC
+   ══════════════════════════════════════════════════════════ */
+/* Holiday / event list items */
+main li.flex.items-center {
+  padding: 8px 0 !important;
+  border-bottom: 1px solid var(--k-border) !important;
+}
+
+main li.flex.items-center:last-child { border-bottom: none !important; }
+
+/* ══════════════════════════════════════════════════════════
+   GLOBAL SEARCH
+   ══════════════════════════════════════════════════════════ */
+.hr-command-surface {
+  border: 1px solid var(--k-border) !important;
+  background: var(--k-surface) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--k-shadow-lg) !important;
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  aside.sticky { width: 200px !important; }
+  main > div.p-8 { padding: 16px !important; }
+  main table { min-width: 640px !important; }
+  section.border-b { padding: 12px 16px 10px !important; }
+}
+
+@media (max-width: 640px) {
+  aside.sticky { display: none !important; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   MICRO INTERACTIONS
+   ══════════════════════════════════════════════════════════ */
+main a, main button { outline: none !important; }
+main a:focus-visible,
+main button:focus-visible {
+  box-shadow: 0 0 0 2px var(--k-brand) !important;
+  border-radius: 6px !important;
+}
+
+/* Smooth page transitions */
+main { animation: k-fade-in .18s ease; }
+@keyframes k-fade-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: none; }
+}

@@ -4,10 +4,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
 
   async rewrites() {
-    const backend =
-      process.env.BACKEND_INTERNAL_URL ||
-      "http://backend:8000";
-
+    const backend = process.env.BACKEND_INTERNAL_URL || "http://backend:8000";
     return [
       {
         source: "/api/backend/:path*",

@@ -1,12 +1,23 @@
 from datetime import date, datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import Integer, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.employee import Employee
 from app.models.enums import SEPARATED_STATUSES
 from app.models.user import User
+
+
+def _by_employee_number(query):
+    """Join User and order ascending by the numeric Employee Number
+    (User.employee_id, e.g. "001" before "050"). Rows with a missing or
+    non-numeric employee_id sort last instead of erroring."""
+    numeric = func.nullif(func.regexp_replace(User.employee_id, r"[^0-9]", "", "g"), "")
+    return query.join(User, User.id == Employee.user_id).order_by(
+        func.coalesce(cast(numeric, Integer), 999999999).asc()
+    )
 
 
 class EmployeeRepository:
@@ -14,11 +25,15 @@ class EmployeeRepository:
         self.db = db
 
     async def get_by_id(self, employee_id: UUID) -> Employee | None:
-        result = await self.db.execute(select(Employee).where(Employee.id == employee_id))
+        result = await self.db.execute(
+            select(Employee).options(selectinload(Employee.user)).where(Employee.id == employee_id)
+        )
         return result.scalar_one_or_none()
 
     async def get_by_user_id(self, user_id: UUID) -> Employee | None:
-        result = await self.db.execute(select(Employee).where(Employee.user_id == user_id))
+        result = await self.db.execute(
+            select(Employee).options(selectinload(Employee.user)).where(Employee.user_id == user_id)
+        )
         return result.scalar_one_or_none()
 
     async def list_all(self, skip: int = 0, limit: int = 50, include_separated: bool = False) -> list[Employee]:
@@ -26,27 +41,32 @@ class EmployeeRepository:
         terminated — they've left, so they shouldn't show up in the active
         roster or on the dashboard. Pass include_separated=True to get
         everyone regardless of status."""
-        query = select(Employee)
+        query = select(Employee).options(selectinload(Employee.user))
         if not include_separated:
             query = query.where(Employee.status.notin_(SEPARATED_STATUSES))
+        query = _by_employee_number(query)
         result = await self.db.execute(query.offset(skip).limit(limit))
         return list(result.scalars().all())
 
-    async def list_separated(self, skip: int = 0, limit: int = 50) -> list[Employee]:
+    async def list_offboarded(self, skip: int = 0, limit: int = 50) -> list[Employee]:
         """Everyone who has resigned or been terminated, most recently
         separated first."""
-        result = await self.db.execute(
+        query = (
             select(Employee)
+            .options(selectinload(Employee.user))
             .where(Employee.status.in_(SEPARATED_STATUSES))
-            .order_by(Employee.separation_date.desc().nulls_last(), Employee.updated_at.desc())
-            .offset(skip)
-            .limit(limit)
         )
+        query = _by_employee_number(query)
+        result = await self.db.execute(query.offset(skip).limit(limit))
         return list(result.scalars().all())
 
-    async def list_recent_separations(self, limit: int = 10) -> list[Employee]:
+    async def list_recent_offboarded(self, limit: int = 10) -> list[Employee]:
         """Used by the dashboard's real-time 'people who left' panel."""
-        return await self.list_separated(skip=0, limit=limit)
+        return await self.list_offboarded(skip=0, limit=limit)
+
+    async def list_recent_separations(self, limit: int = 10) -> list[Employee]:
+        """Backward-compatible alias used by the dashboard service."""
+        return await self.list_offboarded(skip=0, limit=limit)
 
     async def list_direct_reports(self, manager_employee_id: UUID) -> list[Employee]:
         result = await self.db.execute(

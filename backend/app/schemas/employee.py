@@ -1,9 +1,9 @@
 import uuid
+from uuid import UUID
 from datetime import date
-from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr
 
-from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, SelectionStatus
+from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, OffboardReason, SelectionStatus
 
 
 class EmployeeBase(BaseModel):
@@ -34,6 +34,19 @@ class EmployeeCreateResponse(BaseModel):
     temporary_password: str
 
 
+class OffboardedEmployee(BaseModel):
+    """Employee representation used by the former/offboarded employees view."""
+
+    id: UUID
+    full_name: str
+    designation: str | None = None
+    department: str | None = None
+    offboard_reason: OffboardReason | None = None
+    offboarded_at: date | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class EmployeeStats(BaseModel):
     total_employees: int
     active_today: int
@@ -54,6 +67,11 @@ class EmployeeUpdate(BaseModel):
     blood_group: str | None = None
     emergency_contact: str | None = None
     personal_email: str | None = None
+    mobile_number: str | None = None
+    bank_account_number: str | None = None
+    bank_ifsc: str | None = None
+    bank_name: str | None = None
+    pf_number: str | None = None
     status: EmployeeStatus | None = None
 
 
@@ -62,12 +80,14 @@ class EmployeeReadPublic(EmployeeBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    employee_id: str | None = None
+    gender: str | None = None
     photo_url: str | None = None
     status: EmployeeStatus
     selection_status: SelectionStatus
     conversion_status: ConversionStatus
-    separation_date: date | None = None
-    separation_reason: str | None = None
+    offboard_reason: OffboardReason | None = None
+    offboarded_at: date | None = None
 
 
 class EmployeeReadFull(EmployeeReadPublic):
@@ -78,6 +98,25 @@ class EmployeeReadFull(EmployeeReadPublic):
     blood_group: str | None = None
     emergency_contact: str | None = None
     personal_email: str | None = None
+    mobile_number: str | None = None
+    bank_account_number: str | None = None
+    bank_ifsc: str | None = None
+    bank_name: str | None = None
+    pf_number: str | None = None
+
+
+class SeparatedEmployee(BaseModel):
+    """Former employee shown in the separated/former employees list."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    employee_id: str | None = None
+    full_name: str
+    designation: str | None = None
+    department: str | None = None
+    status: EmployeeStatus
+    offboard_reason: OffboardReason | None = None
+    offboarded_at: date | None = None
 
 
 class ConversionDecisionRequest(BaseModel):
@@ -85,22 +124,4 @@ class ConversionDecisionRequest(BaseModel):
 
 
 class OffboardRequest(BaseModel):
-    """Marks an employee as resigned or fired. Effective date defaults to
-    today (server-side) if omitted."""
-    status: Literal["resigned", "terminated"]
-    reason: str | None = None
-    effective_date: date | None = None
-
-
-class SeparatedEmployee(BaseModel):
-    """Row shape for the 'people who have left the company' list —
-    directory + dashboard both use this."""
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    full_name: str
-    department: str | None = None
-    designation: str | None = None
-    status: EmployeeStatus
-    separation_date: date | None = None
-    separation_reason: str | None = None
+    reason: OffboardReason

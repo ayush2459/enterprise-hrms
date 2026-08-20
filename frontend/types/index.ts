@@ -14,21 +14,28 @@ export interface User {
   mfa_enabled: boolean;
 }
 
-export type EmployeeStatus = "active" | "on_leave" | "offboarded" | "resigned" | "terminated";
-
 export interface EmployeePublic {
   id: string;
+  employee_id: string | null;
   full_name: string;
+  gender: string | null;
   department: string | null;
   designation: string | null;
   employment_type: "full_time" | "intern" | "contract";
   date_of_joining: string | null;
   photo_url: string | null;
-  status: EmployeeStatus;
+  status: "active" | "on_leave" | "offboarded";
   notice_period_days: number | null;
   conversion_status: "not_applicable" | "pending" | "approved" | "rejected";
-  separation_date: string | null;
-  separation_reason: string | null;
+  offboard_reason:
+    | "resignation"
+    | "termination"
+    | "contract_end"
+    | "retirement"
+    | "abandonment"
+    | "other"
+    | null;
+  offboarded_at: string | null;
 }
 
 export interface EmployeeFull extends EmployeePublic {
@@ -38,6 +45,11 @@ export interface EmployeeFull extends EmployeePublic {
   blood_group: string | null;
   emergency_contact: string | null;
   personal_email: string | null;
+  mobile_number: string | null;
+  bank_account_number: string | null;
+  bank_ifsc: string | null;
+  bank_name: string | null;
+  pf_number: string | null;
 }
 
 export interface EmployeeCreateInput {
@@ -65,22 +77,6 @@ export interface EmployeeStats {
   policy_acknowledgements_due: number | null;
 }
 
-export interface SeparatedEmployee {
-  id: string;
-  full_name: string;
-  department: string | null;
-  designation: string | null;
-  status: EmployeeStatus;
-  separation_date: string | null;
-  separation_reason: string | null;
-}
-
-export interface OffboardInput {
-  status: "resigned" | "terminated";
-  reason?: string;
-  effective_date?: string;
-}
-
 export interface LoginResponse {
   status: "success" | "mfa_required" | "captcha_required";
   tokens?: {
@@ -89,6 +85,26 @@ export interface LoginResponse {
     token_type: string;
   };
 }
+
+export type HRDocumentType =
+  | "pan_card"
+  | "aadhaar_card"
+  | "resume"
+  | "passport"
+  | "photograph"
+  | "address_proof"
+  | "bank_proof"
+  | "educational_certificate"
+  | "class_10_certificate"
+  | "class_12_certificate"
+  | "graduation_certificate"
+  | "employment_proof"
+  | "joining_letter"
+  | "offer_letter"
+  | "appraisal_letter"
+  | "relieving_letter"
+  | "experience_letter"
+  | "other"
 
 export type DocumentStatus = "pending_upload" | "submitted" | "verified" | "rejected" | "expired";
 
@@ -150,7 +166,7 @@ export interface TeamMember {
   designation: string | null;
   department: string | null;
   official_email: string;
-  status: EmployeeStatus;
+  status: "active" | "on_leave" | "offboarded";
   employment_type: "full_time" | "intern" | "contract";
 }
 
@@ -312,6 +328,46 @@ export interface LeaveType {
   id: string;
   name: string;
   annual_quota_days: number;
+
+  eligibility_gender: "all" | "male" | "female";
+  is_paid: boolean;
+
+  carry_forward_allowed: boolean;
+  max_carry_forward_days: number;
+
+  encashment_allowed: boolean;
+
+  requires_document: boolean;
+  requires_reason: boolean;
+
+  min_days: number;
+  max_days: number;
+  advance_notice_days: number;
+
+  is_active: boolean;
+}
+
+
+export interface LeaveTypePayload {
+  name: string;
+  annual_quota_days: number;
+
+  eligibility_gender: "all" | "male" | "female";
+  is_paid: boolean;
+
+  carry_forward_allowed: boolean;
+  max_carry_forward_days: number;
+
+  encashment_allowed: boolean;
+
+  requires_document: boolean;
+  requires_reason: boolean;
+
+  min_days: number;
+  max_days: number;
+  advance_notice_days: number;
+
+  is_active: boolean;
 }
 
 export interface LeaveRequest {
@@ -350,14 +406,22 @@ export interface RecentJoiner {
   date_of_joining: string | null;
 }
 
-export interface SeparatedEmployeeSummary {
+export interface RecentDeparture {
   id: string;
   full_name: string;
   designation: string | null;
   department: string | null;
-  status: EmployeeStatus;
-  separation_date: string | null;
-  separation_reason: string | null;
+  offboard_reason:
+    | "resignation"
+    | "termination"
+    | "contract_end"
+    | "retirement"
+    | "abandonment"
+    | "other"
+    | null;
+  offboarded_at: string | null;
+  status: string;
+  separation_date: string;
 }
 
 export interface PendingApprovals {
@@ -389,7 +453,15 @@ export interface CompanyEvent {
   category: string;
 }
 
+export interface SmartAlert {
+  severity: "critical" | "warning" | "info";
+  message: string;
+  count: number;
+  link: string;
+}
+
 export interface DashboardSummary {
+  smart_alerts: SmartAlert[];
   total_employees: number;
   active_today: number;
   new_joiners_30d: number;
@@ -398,11 +470,72 @@ export interface DashboardSummary {
   pending_document_verifications: number;
   leaves_today: number;
   total_separated: number;
+
   employees_by_department: DepartmentBreakdown[];
   headcount_trend: HeadcountPoint[];
   recent_joiners: RecentJoiner[];
-  recently_separated: SeparatedEmployeeSummary[];
+  recently_separated: RecentDeparture[];
+
   pending_approvals: PendingApprovals;
   policy_updates: PolicyUpdate[];
   upcoming_events: UpcomingEvent[];
+}
+
+export interface FactoryResetResult {
+  message: string;
+  tables_cleared: number;
+  non_admin_users_removed: number;
+}
+
+export interface ImportRowError {
+  row: number;
+  identifier: string;
+  error: string;
+}
+
+export interface EmployeeImportResult {
+  total_rows: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: ImportRowError[];
+}
+
+export interface Asset {
+  id: string;
+  employee_id: string;
+  asset_type: string;
+  asset_name: string;
+  serial_number: string | null;
+  assigned_date: string | null;
+  returned_date: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface Holiday {
+  id: string;
+  name: string;
+  date: string;
+  is_optional: boolean;
+}
+
+
+export interface EmployeeProject {
+  id: string;
+  employee_id: string;
+  project_name: string;
+  project_code: string | null;
+  client_name: string | null;
+  role: string | null;
+  project_manager: string | null;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  allocation_percentage: number;
+  technologies: string | null;
+  description: string | null;
+  responsibilities: string | null;
+  achievements: string | null;
+  remarks: string | null;
 }

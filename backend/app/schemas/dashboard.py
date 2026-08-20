@@ -56,6 +56,14 @@ class UpcomingEvent(BaseModel):
     category: str | None = None  # set for company_event only
 
 
+class SmartAlert(BaseModel):
+    """A proactive HR alert computed from existing HR data."""
+    severity: str
+    message: str
+    count: int
+    link: str
+
+
 class DashboardSummary(BaseModel):
     total_employees: int
     active_today: int
@@ -72,3 +80,5 @@ class DashboardSummary(BaseModel):
     pending_approvals: PendingApprovals
     policy_updates: list[PolicyUpdate]
     upcoming_events: list[UpcomingEvent]
+
+    smart_alerts: list[SmartAlert]

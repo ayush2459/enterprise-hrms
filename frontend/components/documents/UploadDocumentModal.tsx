@@ -4,7 +4,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { documentService } from "@/services/document.service";
+import { HR_DOCUMENT_TYPES, documentService } from "@/services/document.service";
 
 interface UploadDocumentModalProps {
   employeeId: string;
@@ -48,14 +48,32 @@ export function UploadDocumentModal({ employeeId, onClose, onUploaded }: UploadD
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
-          <Input
-            id="document_type"
-            label="Document Type"
-            placeholder="e.g. PAN Card, Offer Letter"
-            value={documentType}
-            onChange={(e) => setDocumentType(e.target.value)}
-            required
-          />
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="document_type"
+              className="text-sm font-medium text-brand-dark"
+            >
+              Document Type
+            </label>
+
+            <select
+              id="document_type"
+              value={documentType}
+              onChange={(e) => setDocumentType(e.target.value)}
+              required
+              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-brand-dark outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+            >
+              <option value="" disabled>
+                Select document type
+              </option>
+
+              {HR_DOCUMENT_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-brand-dark">File</label>
             <input

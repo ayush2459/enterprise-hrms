@@ -28,27 +28,29 @@ router = APIRouter(prefix="/employees", tags=["employees"])
 @router.get("", response_model=list[EmployeeReadPublic])
 async def list_employees(
     skip: int = 0,
-    limit: int = 50,
+    limit: int = 1000,
+    include_offboarded: bool = False,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Directory view — every authenticated role can see the public
-    fields. Only currently active employees show up here; anyone marked
-    resigned/terminated is excluded (see /separated for that list)."""
-    return await EmployeeService(db).list_directory(skip, limit)
+    fields. By default only active employees are returned; pass
+    include_offboarded=true to also get resigned/terminated employees
+    in the same list (still sorted by Employee Number ascending)."""
+    return await EmployeeService(db).list_directory(skip, limit, include_separated=include_offboarded)
 
 
-@router.get("/separated", response_model=list[SeparatedEmployee])
-async def list_separated_employees(
+@router.get("/offboarded", response_model=list[SeparatedEmployee])
+async def list_offboarded_employees(
     skip: int = 0,
-    limit: int = 50,
+    limit: int = 1000,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Everyone who has resigned or been terminated — the 'former
     employees' list. Registered before /{employee_id} so it doesn't get
     swallowed by the dynamic route."""
-    return await EmployeeService(db).list_separated(skip, limit)
+    return await EmployeeService(db).list_offboarded(skip, limit)
 
 
 @router.get("/stats/summary", response_model=EmployeeStats)
@@ -161,7 +163,7 @@ async def offboard_employee(
     if employee is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
 
-    updated = await EmployeeService(db).offboard_employee(employee, payload, current_user)
+    updated = await EmployeeService(db).offboard_employee(employee, payload.reason, current_user)
     await db.commit()
     return EmployeeReadFull.model_validate(updated)
 

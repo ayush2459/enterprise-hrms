@@ -17,7 +17,7 @@ export function OffboardEmployeeModal({
   onClose: () => void;
   onDone: () => void;
 }) {
-  const [separationType, setSeparationType] = useState<"resigned" | "terminated">("resigned");
+  const [separationType, setSeparationType] = useState<"resignation" | "termination">("resignation");
   const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().slice(0, 10));
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,11 +28,10 @@ export function OffboardEmployeeModal({
     setError(null);
     setLoading(true);
     try {
-      await employeeService.offboard(employeeId, {
-        status: separationType,
-        reason: reason || undefined,
-        effective_date: effectiveDate || undefined,
-      });
+      await employeeService.offboard(
+        employeeId,
+        separationType
+      );
       onDone();
       onClose();
     } catch (err: any) {
@@ -67,9 +66,9 @@ export function OffboardEmployeeModal({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setSeparationType("resigned")}
+                onClick={() => setSeparationType("resignation")}
                 className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-                  separationType === "resigned"
+                  separationType === "resignation"
                     ? "border-brand bg-brand/5 text-brand"
                     : "border-gray-200 text-gray-500 hover:border-gray-300"
                 }`}
@@ -78,9 +77,9 @@ export function OffboardEmployeeModal({
               </button>
               <button
                 type="button"
-                onClick={() => setSeparationType("terminated")}
+                onClick={() => setSeparationType("termination")}
                 className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-                  separationType === "terminated"
+                  separationType === "termination"
                     ? "border-red-500 bg-red-50 text-red-600"
                     : "border-gray-200 text-gray-500 hover:border-gray-300"
                 }`}
