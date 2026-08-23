@@ -35,7 +35,7 @@ export default function EmployeesPage() {
   const departments = useMemo(() => Array.from(new Set(employees.map(e => e.department).filter(Boolean))) as string[], [employees]);
   const statuses = useMemo(() => Array.from(new Set(employees.map(e => e.status))) as string[], [employees]);
   const filtered = useMemo(() => employees.filter(e => {
-    const haystack = [e.full_name, e.department, e.designation, e.status].filter(Boolean).join(" ").toLowerCase();
+    const haystack = [e.full_name, e.employee_id, e.department, e.designation, e.status].filter(Boolean).join(" ").toLowerCase();
     return (!query || haystack.includes(query.toLowerCase())) && (department === "all" || e.department === department) && (status === "all" || e.status === status);
   }), [employees, query, department, status]);
   const active = employees.filter(e => e.status === "active").length;
@@ -56,7 +56,13 @@ export default function EmployeesPage() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
             <Search size={17} className="text-gray-400" />
-            
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name, department, designation, or status..."
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 outline-none"
+            />
             {query && <button onClick={() => setQuery("")}><X size={15} className="text-gray-400" /></button>}
           </div>
           <div className="flex flex-wrap gap-2">

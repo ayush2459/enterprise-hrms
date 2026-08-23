@@ -1,6 +1,6 @@
 "use client";
-
 import { usePathname, useRouter } from "next/navigation";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 import {
   ArrowUpRight,
   BarChart3,
@@ -362,6 +362,7 @@ function Metric({ item }: { item: ModuleConfig["metrics"][number] }) {
 export function ModuleCommandCenter() {
   const pathname = usePathname();
   const router = useRouter();
+  const { query, setQuery } = usePageSearch();
 
   const key = Object.keys(CONFIG).find(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
@@ -446,9 +447,13 @@ export function ModuleCommandCenter() {
       <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm md:flex-row md:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
           <Search size={14} className="text-slate-400" />
-          <span className="truncate text-[11px] text-slate-400">
-            Search within {config.title.replace(" command center", "").replace(" center", "").toLowerCase()}…
-          </span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search within ${config.title.replace(" command center", "").replace(" center", "").toLowerCase()}…`}
+            className="min-w-0 flex-1 truncate bg-transparent text-[12px] text-slate-700 placeholder:text-slate-400 outline-none"
+          />
           <kbd className="ml-auto hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] text-slate-400 md:block">
             ⌘ K
           </kbd>

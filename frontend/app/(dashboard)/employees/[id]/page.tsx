@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loader } from "@/components/common/Loader";
 import { EditPersonalDetailsModal } from "@/components/employees/EditPersonalDetailsModal";
+import { EditEmploymentDetailsModal } from "@/components/employees/EditEmploymentDetailsModal";
 import { OffboardEmployeeModal } from "@/components/employees/OffboardEmployeeModal";
 import { AddDependentModal } from "@/components/insurance/AddDependentModal";
 import { employeeService } from "@/services/employee.service";
@@ -129,6 +130,7 @@ export default function EmployeeProfilePage() {
 
   const [employee, setEmployee] = useState<EmployeeFull | EmployeePublic | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditEmploymentModal, setShowEditEmploymentModal] = useState(false);
   const [showOffboardModal, setShowOffboardModal] = useState(false);
   const [reactivateLoading, setReactivateLoading] = useState(false);
   const [reactivateError, setReactivateError] = useState<string | null>(null);
@@ -503,9 +505,22 @@ export default function EmployeeProfilePage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Employment Details */}
-          <SectionCard title="Employment Details">
+          <SectionCard
+            title="Employment Details"
+            action={
+              isHR && (
+                <button
+                  onClick={() => setShowEditEmploymentModal(true)}
+                  className="flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+                >
+                  <Pencil size={12} />
+                  Edit
+                </button>
+              )
+            }
+          >
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Employee ID" value={employee.id.slice(0, 8)} />
+              <Field label="Employee ID" value={employee.employee_id ?? "—"} />
               <Field label="Department" value={employee.department} />
               <Field label="Position" value={employee.designation} />
               <Field label="Employment Type" value={employee.employment_type.replace("_", " ")} />
@@ -2095,6 +2110,14 @@ export default function EmployeeProfilePage() {
           employeeId={employeeId}
           existing={full}
           onClose={() => setShowEditModal(false)}
+          onSaved={(updated) => setEmployee(updated)}
+        />
+      )}
+      {showEditEmploymentModal && employee && (
+        <EditEmploymentDetailsModal
+          employeeId={employeeId}
+          existing={employee}
+          onClose={() => setShowEditEmploymentModal(false)}
           onSaved={(updated) => setEmployee(updated)}
         />
       )}
