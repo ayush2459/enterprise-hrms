@@ -10,7 +10,7 @@ import type {
 
 export const employeeService = {
   async me() {
-    const { data } = await api.get<EmployeeFull | EmployeePublic>("/employees/me");
+    const { data } = await api.get<EmployeeFull>("/employees/me");
     return data;
   },
   async list(
