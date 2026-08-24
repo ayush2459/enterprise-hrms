@@ -13,7 +13,7 @@ import {
   Menu,
 } from "lucide-react";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
-import { usePageSearch } from "@/components/layout/PageSearchContext";
+import { usePageSearch } from "@/components/layout/PageSearchContext";\nimport { useAuthStore } from "@/store/auth.store";
 
 interface TopbarProps {
   title?: string;
@@ -21,7 +21,7 @@ interface TopbarProps {
 }
 
 export function Topbar({ title, subtitle }: TopbarProps) {
-  const { query, setQuery } = usePageSearch();
+  const { query, setQuery } = usePageSearch();\n  const { user } = useAuthStore();
   const router = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
