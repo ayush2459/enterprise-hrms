@@ -159,10 +159,10 @@ export function Topbar({ title, subtitle }: TopbarProps) {
             <div role="menu" className="absolute right-0 top-11 z-50 w-60 rounded-xl border border-slate-200 bg-white p-1.5 shadow-[0_15px_40px_rgba(15,23,42,.14)]">
               <div className="mb-1 border-b border-slate-100 px-3 py-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">A</div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">{(user?.official_email?.[0] ?? "U").toUpperCase()}</div>
                   <div>
-                    <p className="text-xs font-semibold text-slate-900">Admin</p>
-                    <p className="mt-0.5 text-[10px] text-slate-400">Administrator</p>
+                    <p className="text-xs font-semibold text-slate-900">{user?.official_email ?? "User"}</p>
+                    <p className="mt-0.5 capitalize text-[10px] text-slate-400">{user?.role?.replaceAll("_", " ") ?? "User"}</p>
                   </div>
                 </div>
               </div>
