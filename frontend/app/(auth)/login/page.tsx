@@ -36,7 +36,7 @@ export default function LoginPage() {
         setTokens(result.tokens.access_token, result.tokens.refresh_token);
         const me = await authService.me();
         setUser(me);
-        router.push("/dashboard");
+        router.push(me.role === "employee" ? "/my-workspace" : "/dashboard");
       }
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? "Login failed. Please try again.");
