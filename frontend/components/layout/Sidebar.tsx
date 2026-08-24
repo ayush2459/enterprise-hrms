@@ -106,7 +106,6 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuthStore();
   const isEmployee = user?.role === "employee";
-  const isManager = user?.role === "reporting_manager";
 
   const renderItem = (
     item: {
@@ -231,7 +230,11 @@ export function Sidebar() {
         </p>
 
         <div className="space-y-1">
-          {primary.map(renderItem)}
+          <Link href="/my-workspace" className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-blue-100/75 hover:bg-white/10 hover:text-white">
+            <UserCheck size={17} />
+            <span className="flex-1">My Workspace</span>
+          </Link>
+          {!isEmployee && primary.map(renderItem)}
         </div>
 
         <div className="my-5 h-px bg-white/10" />
@@ -241,7 +244,7 @@ export function Sidebar() {
         </p>
 
         <div className="space-y-1">
-          {people.map(renderItem)}
+          {people.filter((item) => !isEmployee || ["Attendance", "Leaves", "Payroll"].includes(item.label)).map(renderItem)}
         </div>
 
         <div className="my-5 h-px bg-white/10" />
@@ -251,7 +254,7 @@ export function Sidebar() {
         </p>
 
         <div className="space-y-1">
-          {manage.map(renderItem)}
+          {!isEmployee && manage.map(renderItem)}
         </div>
 
       </nav>
@@ -276,15 +279,15 @@ export function Sidebar() {
         <div className="mt-3 flex items-center gap-3 rounded-xl bg-white/[0.06] p-3">
 
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-[11px] font-bold">
-            A
+            {(user?.official_email?.[0] ?? "U").toUpperCase()}
           </div>
 
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold">
-              Admin
+              {user?.employee_id ?? user?.official_email?.split("@")[0] ?? "User"}
             </p>
-            <p className="truncate text-[10px] text-blue-200/55">
-              Administrator
+            <p className="truncate text-[10px] capitalize text-blue-200/55">
+              {user?.role?.replaceAll("_", " ") ?? "User"}
             </p>
           </div>
 
