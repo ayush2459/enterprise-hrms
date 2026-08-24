@@ -8,7 +8,7 @@ import type {
   EmployeeStats,
 } from "@/types";
 
-export const employeeService = {
+export const employeeService = {\n  async me() {\n    const { data } = await api.get<EmployeeFull | EmployeePublic>("/employees/me");\n    return data;\n  },
   async list(
     skip = 0,
     limit = 1000,
