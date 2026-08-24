@@ -22,7 +22,7 @@ const statusClass: Record<string, string> = {
 };
 
 export default function MyWorkspacePage() {
-  const [employee, setEmployee] = useState<EmployeeFull | EmployeePublic | null>(null);
+  const [employee, setEmployee] = useState<EmployeeFull | null>(null);
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [attendance, setAttendance] = useState<AttendanceSummary | null>(null);
@@ -70,7 +70,7 @@ export default function MyWorkspacePage() {
     return <><Topbar title="My Workspace" subtitle="Your employee self-service portal" /><div className="p-8"><Card className="border-red-100 bg-red-50"><p className="text-sm font-semibold text-red-700">Workspace unavailable</p><p className="mt-1 text-xs text-red-600">{error ?? "No employee profile is linked to this account."}</p></Card></div></>;
   }
 
-  const fullEmployee = employee as EmployeeFull;
+  const fullEmployee = employee;
 
   return (
     <>
@@ -127,7 +127,7 @@ export default function MyWorkspacePage() {
           <Card>
             <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><UserRound size={19} /></div><div><h2 className="text-sm font-bold text-slate-900">My profile</h2><p className="text-[11px] text-slate-400">Personal information and contact details.</p></div></div>
             <div className="mt-5 grid grid-cols-2 gap-x-5 gap-y-4">
-              <ProfileItem label="Official email" value={employee.official_email ?? "—"} />
+              <ProfileItem label="Official email" value={fullEmployee.official_email ?? "—"} />
               <ProfileItem label="Personal email" value={fullEmployee.personal_email ?? "—"} />
               <ProfileItem label="Mobile" value={fullEmployee.mobile_number ?? "—"} />
               <ProfileItem label="Joining date" value={employee.date_of_joining ? formatDate(employee.date_of_joining) : "—"} />
