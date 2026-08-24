@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";\nimport { useAuthStore } from "@/store/auth.store";
 import {
   LayoutDashboard,
   Users,
@@ -102,7 +102,7 @@ const manage = [
 ];
 
 export function Sidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname();\n  const { user } = useAuthStore();\n  const isEmployee = user?.role === "employee";\n  const isManager = user?.role === "reporting_manager";
 
   const renderItem = (
     item: {
