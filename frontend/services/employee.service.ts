@@ -53,6 +53,11 @@ export const employeeService = {
     return data;
   },
 
+  async getMyProfile() {
+    const { data } = await api.get<EmployeeFull>("/employees/me");
+    return data;
+  },
+
   async getById(id: string) {
     const { data } = await api.get<
       EmployeeFull | EmployeePublic

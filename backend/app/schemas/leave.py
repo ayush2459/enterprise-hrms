@@ -69,3 +69,15 @@ class LeaveBalance(BaseModel):
     annual_quota_days: int
     days_used: int
     days_remaining: int
+
+
+class PendingApprovalItem(BaseModel):
+    request_id: str
+    employee_id: str
+    employee_name: str
+    department: str | None = None
+    designation: str | None = None
+    leave_type_id: str
+    start_date: str
+    end_date: str
+    reason: str | None = None

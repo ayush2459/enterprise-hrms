@@ -1,5 +1,5 @@
 "use client";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { usePageSearch } from "@/components/layout/PageSearchContext";
 import {
   ArrowUpRight,
@@ -361,6 +361,7 @@ function Metric({ item }: { item: ModuleConfig["metrics"][number] }) {
 
 export function ModuleCommandCenter() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { query, setQuery } = usePageSearch();
 
@@ -381,19 +382,14 @@ export function ModuleCommandCenter() {
 
   /** Determine which tab is currently active based on pathname + search params */
   function isActiveView(view: ViewConfig, index: number): boolean {
-    if (typeof window === "undefined") return index === 0;
-    const sp = new URLSearchParams(window.location.search);
-    const currentView = sp.get("view");
+    const currentView = searchParams.get("view");
     if (view.href) {
-      try {
-        const u = new URL(view.href, window.location.origin);
-        const vParam = u.searchParams.get("view");
-        // Special case: full path navigation (no view param) — match exact pathname
-        if (!vParam) return pathname === u.pathname && !currentView;
-        return vParam === currentView;
-      } catch {
-        return false;
-      }
+      const [hrefPath, hrefQuery] = view.href.split("?");
+      const hrefParams = new URLSearchParams(hrefQuery ?? "");
+      const vParam = hrefParams.get("view");
+      // Special case: full path navigation (no view param) — match exact pathname
+      if (!vParam) return pathname === hrefPath && !currentView;
+      return vParam === currentView;
     }
     // First tab (no href) is active when no view param is set
     return !currentView && pathname === key;

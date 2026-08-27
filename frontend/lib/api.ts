@@ -1,5 +1,4 @@
 import axios from "axios";
-import Cookies from "js-cookie";
 
 // All requests go through the Next.js rewrite (/api/backend/*) defined in
 // next.config.ts, so the browser never talks to the backend origin
@@ -11,7 +10,11 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = Cookies.get("access_token");
+  // sessionStorage (not cookies) so each browser tab can hold its own
+  // independent login — lets HR/Manager/Employee be logged in
+  // simultaneously in separate tabs instead of overwriting one shared
+  // session.
+  const token = typeof window !== "undefined" ? sessionStorage.getItem("access_token") : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -35,8 +38,8 @@ api.interceptors.response.use(
     );
 
     if (error.response?.status === 401 && !isAuthEndpoint && typeof window !== "undefined") {
-      Cookies.remove("access_token");
-      Cookies.remove("refresh_token");
+      sessionStorage.removeItem("access_token");
+      sessionStorage.removeItem("refresh_token");
       window.location.href = "/login";
     }
 

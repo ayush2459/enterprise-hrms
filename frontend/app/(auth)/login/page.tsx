@@ -36,7 +36,16 @@ export default function LoginPage() {
         setTokens(result.tokens.access_token, result.tokens.refresh_token);
         const me = await authService.me();
         setUser(me);
-        router.push("/dashboard");
+
+        // Route by role: HR/Admin keep the full admin dashboard, managers
+        // get a team-focused workspace, everyone else gets self-service.
+        if (["hr_admin", "hr_executive", "system_admin"].includes(me.role)) {
+          router.push("/dashboard");
+        } else if (me.role === "reporting_manager") {
+          router.push("/manager");
+        } else {
+          router.push("/my-workspace");
+        }
       }
     } catch (err: any) {
       setError(err?.response?.data?.detail ?? "Login failed. Please try again.");

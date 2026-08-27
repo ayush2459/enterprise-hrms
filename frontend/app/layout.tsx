@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
+import { RealtimeProvider } from "@/components/RealtimeProvider";
 
 export const metadata: Metadata = {
   title: "HRHub — Enterprise HR Portal",
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="antialiased font-body">{children}</body>
+      <body className="antialiased font-body"><RealtimeProvider>{children}</RealtimeProvider></body>
     </html>
   );
 }

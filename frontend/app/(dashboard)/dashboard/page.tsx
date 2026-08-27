@@ -125,41 +125,48 @@ export default function DashboardPage() {
 
       <main className="w-full px-5 py-5 md:px-7 lg:px-8">
 
-        {/* HEADER */}
+        {/* HERO — restyled to match the Employee/Manager workspace look;
+            data below is untouched from the original dashboard. */}
 
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
-          <div>
-            <h2 className="text-[23px] font-bold tracking-tight text-slate-900">
-              Good evening, Admin <span className="text-lg">👋</span>
-            </h2>
-
-            <p className="mt-1 text-[12px] text-slate-500">
-              Live workforce data from your HRMS.
-            </p>
-
-            {data && (
-              <p className="mt-1 text-[10px] font-medium text-emerald-600">
-                ● Live · Automatically refreshed every 30 seconds
+        <div className="mb-6 rounded-2xl bg-gradient-to-br from-brand-dark to-brand p-7 text-white shadow-lg">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[.14em] text-blue-200">
+                HR Administration
               </p>
-            )}
+              <h2 className="mt-2 text-2xl font-bold">
+                Good evening, Admin <span className="text-lg">👋</span>
+              </h2>
+              <p className="mt-1 text-sm text-blue-100">
+                Live workforce data from your HRMS.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full bg-white/10 px-3 py-1 text-xs">
+                  {totalEmployees} Employees
+                </span>
+                {data && (
+                  <span className="rounded-full bg-emerald-400/20 px-3 py-1 text-xs text-emerald-100">
+                    ● Live · refreshed every 30s
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <Link
+              href="/employees"
+              className="
+                inline-flex w-fit items-center gap-2
+                rounded-lg bg-white
+                px-4 py-2.5
+                text-xs font-semibold text-brand-dark
+                shadow-sm
+                transition hover:bg-blue-50
+              "
+            >
+              <UserPlus size={15} />
+              Add Employee
+            </Link>
           </div>
-
-          <Link
-            href="/employees"
-            className="
-              inline-flex w-fit items-center gap-2
-              rounded-lg bg-blue-600
-              px-4 py-2.5
-              text-xs font-semibold text-white
-              shadow-sm
-              transition hover:bg-blue-700
-            "
-          >
-            <UserPlus size={15} />
-            Add Employee
-          </Link>
-
         </div>
 
         {error && (

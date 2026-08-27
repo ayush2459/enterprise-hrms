@@ -31,6 +31,16 @@ export default function EmployeesPage() {
     finally { setLoading(false); }
   };
   useEffect(() => { loadEmployees(); }, []);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.type === "manager_assigned" || detail?.type === "team_updated" || detail?.type === "role_changed") {
+        loadEmployees();
+      }
+    };
+    window.addEventListener("hrhub:realtime", handler);
+    return () => window.removeEventListener("hrhub:realtime", handler);
+  }, []);
 
   const departments = useMemo(() => Array.from(new Set(employees.map(e => e.department).filter(Boolean))) as string[], [employees]);
   const statuses = useMemo(() => Array.from(new Set(employees.map(e => e.status))) as string[], [employees]);
@@ -82,7 +92,36 @@ export default function EmployeesPage() {
       <Card className="overflow-hidden p-0">
         {loading ? <Loader label="Loading employees..." /> : <>
           <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4"><div><p className="text-sm font-semibold text-gray-900">Employee directory</p><p className="text-xs text-gray-400">{filtered.length} people match the current filters</p></div>{selected.length > 0 && <span className="rounded-lg bg-brand/10 px-3 py-1.5 text-xs font-medium text-brand">{selected.length} selected</span>}</div>
-          <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-surface-muted text-left text-xs text-gray-500"><tr><th className="px-5 py-3"><input type="checkbox" checked={filtered.length > 0 && selected.length === filtered.length} onChange={e => setSelected(e.target.checked ? filtered.map(x=>x.id) : [])}/></th><th className="px-5 py-3">Emp #</th><th className="px-5 py-3">Employee</th><th className="px-5 py-3">Department</th><th className="px-5 py-3">Designation</th><th className="px-5 py-3">Status</th></tr></thead><tbody className="divide-y divide-gray-100">{filtered.map(emp => <tr key={emp.id} onClick={() => router.push(`/employees/${emp.id}`)} className="cursor-pointer hover:bg-gray-50"><td className="px-5 py-3" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={selected.includes(emp.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,emp.id]:v.filter(id=>id!==emp.id))}/></td><td className="px-5 py-3 text-gray-500 font-mono text-xs">{emp.employee_id ?? "—"}</td><td className="px-5 py-3"><p className="font-medium text-gray-900">{emp.full_name}</p><p className="text-xs text-gray-400">Employee profile</p></td><td className="px-5 py-3 text-gray-600">{emp.department ?? "—"}</td><td className="px-5 py-3 text-gray-600">{emp.designation ?? "—"}</td><td className="px-5 py-3"><span className={`rounded-full px-2.5 py-1 text-[11px] font-medium capitalize ${emp.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}>{emp.status.replace(/_/g," ")}</span>{emp.offboard_reason && <span className="ml-2 text-[11px] text-gray-400 capitalize">({emp.offboard_reason.replace(/_/g," ")})</span>}</td></tr>)}{filtered.length===0 && <tr><td colSpan={6} className="px-5 py-12 text-center text-gray-400">No employees match your filters.</td></tr>}</tbody></table></div>
+          <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-surface-muted text-left text-xs text-gray-500"><tr><th className="px-5 py-3"><input type="checkbox" checked={filtered.length > 0 && selected.length === filtered.length} onChange={e => setSelected(e.target.checked ? filtered.map(x=>x.id) : [])}/></th><th className="px-5 py-3">Emp #</th><th className="px-5 py-3">Employee</th><th className="px-5 py-3">Official Email</th><th className="px-5 py-3">Department</th><th className="px-5 py-3">Designation</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead><tbody className="divide-y divide-gray-100">{filtered.map(emp => <tr key={emp.id} onClick={() => router.push(`/employees/${emp.id}`)} className="cursor-pointer hover:bg-gray-50"><td className="px-5 py-3" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={selected.includes(emp.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,emp.id]:v.filter(id=>id!==emp.id))}/></td><td className="px-5 py-3 text-gray-500 font-mono text-xs">{emp.employee_id ?? "—"}</td><td className="px-5 py-3"><p className="font-medium text-gray-900">{emp.full_name}</p><p className="text-xs text-gray-400">Employee profile</p></td><td className="px-5 py-3 text-gray-600 text-xs">{(emp as any).official_email ?? "—"}</td><td className="px-5 py-3 text-gray-600">{emp.department ?? "—"}</td><td className="px-5 py-3 text-gray-600">{emp.designation ?? "—"}</td><td className="px-5 py-3"><span className={`rounded-full px-2.5 py-1 text-[11px] font-medium capitalize ${emp.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}>{emp.status.replace(/_/g," ")}</span>{emp.offboard_reason && <span className="ml-2 text-[11px] text-gray-400 capitalize">({emp.offboard_reason.replace(/_/g," ")})</span>}</td><td className="px-5 py-3" onClick={e=>e.stopPropagation()}>
+  <div className="flex items-center gap-2">
+    <select
+      defaultValue=""
+      onChange={async (e) => {
+        const managerId = e.target.value;
+        if (!managerId) return;
+        await employeeService.update(emp.id, { reporting_manager_id: managerId } as any);
+        e.target.value = "";
+        loadEmployees();
+      }}
+      className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
+    >
+      <option value="">Assign manager…</option>
+      {employees.filter(m => m.id !== emp.id).map(m => (
+        <option key={m.id} value={m.id}>{m.full_name}</option>
+      ))}
+    </select>
+    <button
+      onClick={async () => {
+        if (!confirm(`Promote ${emp.full_name} to Reporting Manager?`)) return;
+        await employeeService.update(emp.id, { role: "reporting_manager" } as any);
+        loadEmployees();
+      }}
+      className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-brand hover:bg-brand/5"
+    >
+      Promote
+    </button>
+  </div>
+</td></tr>)}{filtered.length===0 && <tr><td colSpan={8} className="px-5 py-12 text-center text-gray-400">No employees match your filters.</td></tr>}</tbody></table></div>
         </>}
       </Card>
     </div>

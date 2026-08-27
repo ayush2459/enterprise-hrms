@@ -7,6 +7,7 @@ from app.auth.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.leave import (
+    PendingApprovalItem,
     LeaveBalance,
     LeaveRequestCreate,
     LeaveRequestDecision,
@@ -67,6 +68,14 @@ async def update_leave_type(
     )
     await db.commit()
     return result
+
+
+@router.get("/pending", response_model=list[PendingApprovalItem])
+async def list_pending_approvals(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await LeaveService(db).list_all_pending(current_user)
 
 
 @router.get("/employee/{employee_id}", response_model=list[LeaveRequestRead])

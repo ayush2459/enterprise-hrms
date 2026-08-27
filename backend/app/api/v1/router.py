@@ -22,6 +22,8 @@ from app.api.v1.endpoints import (
     policies,
     recruitment,
     teams,
+    self_service,
+    manager,
 )
 
 api_router = APIRouter()
@@ -47,3 +49,5 @@ api_router.include_router(dashboard.router)
 api_router.include_router(events.router)
 
 api_router.include_router(projects.router)
+api_router.include_router(self_service.router, prefix="/me", tags=["self-service"])
+api_router.include_router(manager.router, prefix="/manager", tags=["manager"])

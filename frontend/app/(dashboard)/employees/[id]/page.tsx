@@ -244,6 +244,18 @@ export default function EmployeeProfilePage() {
     }
   };
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.type === "manager_assigned" || detail?.type === "team_updated" || detail?.type === "role_changed") {
+        reloadEmployee();
+      }
+    };
+    window.addEventListener("hrhub:realtime", handler);
+    return () => window.removeEventListener("hrhub:realtime", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const reloadEmployee = async () => {
     try {
       const updated = await employeeService.getById(employeeId);
@@ -521,6 +533,7 @@ export default function EmployeeProfilePage() {
           >
             <div className="grid grid-cols-2 gap-4">
               <Field label="Employee ID" value={employee.employee_id ?? "—"} />
+              <Field label="Official Email" value={(employee as any).official_email ?? "—"} />
               <Field label="Department" value={employee.department} />
               <Field label="Position" value={employee.designation} />
               <Field label="Employment Type" value={employee.employment_type.replace("_", " ")} />

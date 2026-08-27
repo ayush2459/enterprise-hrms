@@ -5,7 +5,7 @@ authentication + role-based access re-validation).
 """
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, WebSocket, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,6 +42,36 @@ async def get_current_user(
     # Re-validate role on every request: a token minted before a role
     # change should not keep the old privileges (Section 6).
     if user.role.value != payload.get("role"):
+        raise CREDENTIALS_EXCEPTION
+
+    return user
+
+
+async def get_current_user_ws(
+    websocket,
+    token: str | None = None,
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """WS-compatible variant of get_current_user. Browsers can't send
+    Authorization headers on a WebSocket handshake, so the frontend
+    passes the JWT as a ?token= query param instead."""
+    if token is None:
+        await websocket.close(code=4401)
+        raise CREDENTIALS_EXCEPTION
+
+    payload = decode_token(token)
+    if payload is None or payload.get("type") != "access":
+        await websocket.close(code=4401)
+        raise CREDENTIALS_EXCEPTION
+
+    user_id = payload.get("sub")
+    if user_id is None:
+        await websocket.close(code=4401)
+        raise CREDENTIALS_EXCEPTION
+
+    user = await UserRepository(db).get_by_id(UUID(user_id))
+    if user is None or not user.is_active:
+        await websocket.close(code=4401)
         raise CREDENTIALS_EXCEPTION
 
     return user

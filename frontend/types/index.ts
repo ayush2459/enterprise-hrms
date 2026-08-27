@@ -17,6 +17,7 @@ export interface User {
 export interface EmployeePublic {
   id: string;
   employee_id: string | null;
+  role: string | null;
   full_name: string;
   gender: string | null;
   department: string | null;
@@ -26,6 +27,7 @@ export interface EmployeePublic {
   photo_url: string | null;
   status: "active" | "on_leave" | "offboarded";
   notice_period_days: number | null;
+  reporting_manager_id: string | null;
   conversion_status: "not_applicable" | "pending" | "approved" | "rejected";
   offboard_reason:
     | "resignation"

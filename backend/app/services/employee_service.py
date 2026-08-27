@@ -3,6 +3,7 @@ Employee business logic, including the field-level visibility rule from
 Section 3: only HR Admin, HR Executive, and the employee themself see
 sensitive fields (blood group, personal address, emergency contact).
 """
+import json
 from datetime import date
 from uuid import UUID
 
@@ -133,7 +134,7 @@ class EmployeeService:
             data = {}  # no write access at all
         elif not is_privileged and is_self:
             # Employees may only edit their own contact/banking-type fields,
-            # not org fields like department/designation/manager.
+            # not org fields like department/designation/manager/role.
             allowed = {
                 "personal_address",
                 "emergency_contact",
@@ -146,11 +147,40 @@ class EmployeeService:
             }
             data = {k: v for k, v in data.items() if k in allowed}
 
+        # role lives on the linked User row, not Employee — and even a
+        # privileged requester promoting/demoting someone (e.g. making
+        # them a reporting manager) needs the user relationship loaded.
+        new_role = data.pop("role", None)
+        role_changed = new_role is not None and is_privileged
+        if role_changed:
+            if employee.user is None:
+                await self.repo.db.refresh(employee, attribute_names=["user"])
+            employee.user.role = new_role
+
+        old_manager_id = employee.reporting_manager_id
+        new_manager_id = data.get("reporting_manager_id", old_manager_id)
+        manager_changed = "reporting_manager_id" in data and new_manager_id != old_manager_id
+
         for field, value in data.items():
             setattr(employee, field, value)
 
         await self.repo.save(employee)
         await self.audit.log(requester.id, "employee_update", "employee", str(employee.id))
+
+        from app.core.redis import redis_client
+        if manager_changed:
+            await redis_client.publish(f"user:{employee.user_id}", json.dumps({"type": "manager_assigned", "manager_id": str(new_manager_id) if new_manager_id else None}))
+            if new_manager_id:
+                new_mgr = await self.repo.get_by_id(new_manager_id)
+                if new_mgr:
+                    await redis_client.publish(f"user:{new_mgr.user_id}", json.dumps({"type": "team_updated"}))
+            if old_manager_id:
+                old_mgr = await self.repo.get_by_id(old_manager_id)
+                if old_mgr:
+                    await redis_client.publish(f"user:{old_mgr.user_id}", json.dumps({"type": "team_updated"}))
+        if role_changed:
+            await redis_client.publish(f"user:{employee.user_id}", json.dumps({"type": "role_changed", "role": new_role.value if hasattr(new_role, "value") else new_role}))
+
         return employee
 
     async def request_conversion(self, employee: Employee, requester: User) -> Employee:

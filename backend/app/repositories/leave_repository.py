@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.enums import LeaveRequestStatus
 from app.models.leave_request import LeaveRequest
 from app.models.leave_type import LeaveType
+from app.models.employee import Employee
 
 
 class LeaveTypeRepository:
@@ -75,6 +76,15 @@ class LeaveRequestRepository:
             select(func.count()).select_from(LeaveRequest).where(LeaveRequest.status == LeaveRequestStatus.PENDING)
         )
         return result.scalar_one()
+
+    async def list_all_pending_with_employee(self) -> list[tuple["LeaveRequest", "Employee"]]:
+        result = await self.db.execute(
+            select(LeaveRequest, Employee)
+            .join(Employee, Employee.id == LeaveRequest.employee_id)
+            .where(LeaveRequest.status == LeaveRequestStatus.PENDING)
+            .order_by(LeaveRequest.created_at.asc())
+        )
+        return [(row[0], row[1]) for row in result.all()]
 
     async def count_active_today(self) -> int:
         today = date.today()

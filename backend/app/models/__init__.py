@@ -23,6 +23,7 @@ from app.models.policy_acknowledgement import PolicyAcknowledgement  # noqa: F40
 from app.models.refresh_token import RefreshToken  # noqa: F401
 from app.models.review_cycle import ReviewCycle  # noqa: F401
 from app.models.user import User  # noqa: F401
+from app.models.notification import Notification  # noqa: F401
 
 __all__ = [
     "User",
@@ -46,6 +47,7 @@ __all__ = [
     "CompanyEvent",
     "Asset",
     "Holiday",
+    "Notification",
 ]
 
 from app.models.project import EmployeeProject

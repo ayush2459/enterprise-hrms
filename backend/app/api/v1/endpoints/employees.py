@@ -79,6 +79,26 @@ async def create_employee(
     return result
 
 
+@router.get("/me", response_model=EmployeeReadFull)
+async def get_my_employee_profile(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Self-service: resolve the logged-in user's own employee record.
+    Used by the frontend to default self-service pages (Leaves, Profile)
+    to "me" instead of asking every employee to pick themselves out of
+    the full company directory."""
+    employee = await EmployeeRepository(db).get_by_user_id(current_user.id)
+    if employee is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No employee profile is linked to this account yet. Contact HR.",
+        )
+    result = await EmployeeService(db).get_visible_profile(employee, current_user)
+    await db.commit()
+    return result
+
+
 @router.get("/{employee_id}", response_model=EmployeeReadFull | EmployeeReadPublic)
 async def get_employee(
     employee_id: UUID,

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import {
   Bell,
   HelpCircle,
@@ -28,9 +27,6 @@ export function Topbar({ title, subtitle }: TopbarProps) {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const handleLogout = () => {
-    Cookies.remove("access_token");
-    Cookies.remove("refresh_token");
-
     try {
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");

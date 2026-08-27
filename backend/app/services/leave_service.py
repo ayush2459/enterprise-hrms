@@ -10,7 +10,7 @@ from app.models.leave_type import LeaveType
 from app.models.user import User
 from app.repositories.employee_repository import EmployeeRepository
 from app.repositories.leave_repository import LeaveRequestRepository, LeaveTypeRepository
-from app.schemas.leave import LeaveBalance
+from app.schemas.leave import LeaveBalance, PendingApprovalItem
 from app.services.audit_service import AuditService
 
 HR_ROLES = {RoleEnum.HR_ADMIN, RoleEnum.HR_EXECUTIVE, RoleEnum.SYSTEM_ADMIN}
@@ -454,11 +454,35 @@ class LeaveService:
         await self.audit.log(requester.id, f"leave_{new_status.value}", "leave_request", str(request_id))
         return request
 
+    async def list_all_pending(self, requester: User) -> list[PendingApprovalItem]:
+        if requester.role not in HR_ROLES:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="HR access only.")
+        rows = await self.requests.list_all_pending_with_employee()
+        return [
+            PendingApprovalItem(
+                request_id=str(req.id),
+                employee_id=str(emp.id),
+                employee_name=emp.full_name,
+                department=emp.department,
+                designation=emp.designation,
+                leave_type_id=str(req.leave_type_id),
+                start_date=str(req.start_date),
+                end_date=str(req.end_date),
+                reason=req.reason,
+            )
+            for req, emp in rows
+        ]
+
     async def get_balances(self, employee_id: UUID, requester: User) -> list[LeaveBalance]:
         await self._assert_view_access(employee_id, requester)
+        employee = await self.employees.get_by_id(employee_id)
         leave_types = await self.leave_types.list_all()
         balances = []
         for lt in leave_types:
+            eligibility = getattr(lt, "eligibility_gender", None)
+            if eligibility and eligibility != "all" and employee is not None:
+                if employee.gender != eligibility:
+                    continue
             approved = await self.requests.list_approved_by_employee_and_type(employee_id, lt.id)
             days_used = sum(_days_between(r.start_date, r.end_date) for r in approved)
             balances.append(

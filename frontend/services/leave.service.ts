@@ -53,6 +53,11 @@ export const leaveService = {
     return data;
   },
 
+  async listAllPending() {
+    const { data } = await api.get("/leaves/pending");
+    return data;
+  },
+
   async listForEmployee(employeeId: string) {
     const { data } = await api.get<LeaveRequest[]>(
       `/leaves/employee/${employeeId}`

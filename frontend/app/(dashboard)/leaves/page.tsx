@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 
 import { Topbar } from "@/components/layout/Topbar";
@@ -15,7 +15,9 @@ import { leaveService } from "@/services/leave.service";
 import { useAuthStore } from "@/store/auth.store";
 
 import type {
+  EmployeeFull,
   EmployeePublic,
+  LeaveBalance,
   LeaveRequest,
   LeaveType,
 } from "@/types";
@@ -32,91 +34,189 @@ export default function LeavesPage() {
   const { query: pageSearchQuery } = usePageSearch();
   const { user } = useAuthStore();
   const isHR = !!user && HR_ROLES.includes(user.role);
+  const isManager = !!user && user.role === "reporting_manager";
+
+  // "me" = the logged-in person's own employee record, always loaded so
+  // everyone (including HR/managers) can see and apply for their own leave.
+  const [me, setMe] = useState<EmployeeFull | null>(null);
+  const [meError, setMeError] = useState<string | null>(null);
 
   const [employees, setEmployees] = useState<EmployeePublic[]>([]);
+  // HR uses this to browse anyone's leave history; defaults to "me" for
+  // everyone else so they never see a confusing company-wide picker.
   const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
-  // page-search employee resolver
-  useEffect(() => {
-    const q = pageSearchQuery.trim().toLowerCase();
 
+  useEffect(() => {
+    employeeService
+      .getMyProfile()
+      .then((profile) => {
+        setMe(profile);
+        setSelectedEmployeeId((current) => current || profile.id);
+      })
+      .catch(() => {
+        setMeError(
+          "No employee profile is linked to your account yet — contact HR."
+        );
+      });
+
+    if (isHR) {
+      employeeService.list(0, 1000, true).then(setEmployees).catch(() => {});
+    }
+
+    leaveService.listTypes().then(setLeaveTypes).catch(() => {
+      setError("Could not load leave policies.");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHR]);
+
+  // page-search employee resolver (HR only — searches the full directory)
+  useEffect(() => {
+    if (!isHR) return;
+    const q = pageSearchQuery.trim().toLowerCase();
     if (!q) return;
 
-    const match = employees.find((employee) => {
-      const haystack = [
-        employee.full_name,
-        employee.department,
-        employee.designation,
-        employee.status,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+    // Debounce: wait for typing to pause before resolving + switching
+    // employees, so fast typing doesn't fire a fetch per keystroke.
+    const timeout = setTimeout(() => {
+      const match = employees.find((employee) => {
+        const haystack = [
+          employee.full_name,
+          employee.department,
+          employee.designation,
+          employee.status,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(q);
+      });
 
-      return haystack.includes(q);
-    });
+      if (match && match.id !== selectedEmployeeId) {
+        setSelectedEmployeeId(match.id);
+      }
+    }, 300);
 
-    if (match && match.id !== selectedEmployeeId) {
-      setSelectedEmployeeId(match.id);
-    }
-  }, [pageSearchQuery, employees, selectedEmployeeId]);
+    return () => clearTimeout(timeout);
+  }, [pageSearchQuery, employees, selectedEmployeeId, isHR]);
 
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [balances, setBalances] = useState<LeaveBalance[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
 
-  const selectedEmployee = employees.find(
-    (employee) => employee.id === selectedEmployeeId
-  );
+  // Manager's team: direct reports pending approval, pulled from the same
+  // "me" record's id matched against reporting_manager_id on the roster.
+  const [teamRequests, setTeamRequests] = useState<
+    { employee: EmployeePublic; request: LeaveRequest }[]
+  >([]);
+  const [teamLoading, setTeamLoading] = useState(false);
 
-  useEffect(() => {
-    employeeService
-      .list(0, 100)
-      .then((list) => {
-        setEmployees(list);
+  // HR: company-wide pending approvals (all employees, not just direct reports)
+  const [hrPending, setHrPending] = useState<{ request_id: string; employee_id: string; employee_name: string; department: string | null; designation: string | null; leave_type_id: string; start_date: string; end_date: string; reason: string | null }[]>([]);
+  const [hrPendingLoading, setHrPendingLoading] = useState(false);
 
-        if (list.length > 0) {
-          setSelectedEmployeeId(list[0].id);
-        }
-      })
-      .catch(() => {
-        setError("Could not load employees.");
-      });
+  const selectedEmployee: EmployeePublic | EmployeeFull | undefined =
+    isHR
+      ? employees.find((employee) => employee.id === selectedEmployeeId) ??
+        (me?.id === selectedEmployeeId ? me : undefined)
+      : me ?? undefined;
 
-    leaveService
-      .listTypes()
-      .then(setLeaveTypes)
-      .catch(() => {
-        setError("Could not load leave policies.");
-      });
-  }, []);
+  const loadRequestIdRef = useRef(0);
 
   const load = (employeeId: string) => {
+    const requestId = ++loadRequestIdRef.current;
     setLoading(true);
     setError(null);
 
-    leaveService
-      .listForEmployee(employeeId)
-      .then(setRequests)
-      .catch(() => setError("Could not load leave requests."))
-      .finally(() => setLoading(false));
+    Promise.all([
+      leaveService.listForEmployee(employeeId),
+      leaveService.getBalance(employeeId),
+    ])
+      .then(([reqs, bal]) => {
+        if (requestId !== loadRequestIdRef.current) return; // stale response, ignore
+        setRequests(reqs);
+        setBalances(bal);
+      })
+      .catch(() => {
+        if (requestId !== loadRequestIdRef.current) return;
+        setError("Could not load leave requests.");
+      })
+      .finally(() => {
+        if (requestId !== loadRequestIdRef.current) return;
+        setLoading(false);
+      });
   };
 
   useEffect(() => {
     if (selectedEmployeeId) {
       load(selectedEmployeeId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEmployeeId]);
+
+  // Load the manager's team pending-approval queue. Requires the full
+  // directory to know who reports to "me" — HR already has this list
+  // loaded; managers fetch it just for this purpose.
+  useEffect(() => {
+    if (!isManager || !me) return;
+
+    setTeamLoading(true);
+    employeeService
+      .list(0, 1000, false)
+      .then(async (all) => {
+        const directReports = all.filter(
+          (e) => e.reporting_manager_id === me.id
+        );
+        const results = await Promise.all(
+          directReports.map(async (employee) => {
+            const reqs = await leaveService.listForEmployee(employee.id);
+            return reqs
+              .filter((r) => r.status === "pending")
+              .map((request) => ({ employee, request }));
+          })
+        );
+        setTeamRequests(results.flat());
+      })
+      .catch(() => {})
+      .finally(() => setTeamLoading(false));
+  }, [isManager, me]);
+
+  // HR: company-wide pending approvals list, independent of the manager's
+  // team queue and independent of whichever employee is selected below.
+  useEffect(() => {
+    if (!isHR) return;
+    setHrPendingLoading(true);
+    leaveService
+      .listAllPending()
+      .then(setHrPending)
+      .catch(() => {})
+      .finally(() => setHrPendingLoading(false));
+  }, [isHR]);
+
+  // Select the employee behind a pending-approval row and scroll the
+  // per-employee detail panel into view so HR can see full context.
+  const jumpToEmployee = (employeeId: string) => {
+    setSelectedEmployeeId(employeeId);
+    document
+      .getElementById("employee-view-panel")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const handleDecision = async (
     requestId: string,
-    status: "approved" | "rejected"
+    status: "approved" | "rejected",
+    reloadEmployeeId?: string
   ) => {
     try {
       await leaveService.decide(requestId, status);
-      load(selectedEmployeeId);
+      if (reloadEmployeeId) load(reloadEmployeeId);
+      // Refresh the team queue and the HR-wide queue so the acted-on
+      // request disappears from both.
+      setTeamRequests((prev) => prev.filter((tr) => tr.request.id !== requestId));
+      setHrPending((prev) => prev.filter((p) => p.request_id !== requestId));
     } catch {
       setError("Could not update leave request.");
     }
@@ -125,49 +225,201 @@ export default function LeavesPage() {
   const leaveTypeName = (id: string) =>
     leaveTypes.find((lt) => lt.id === id)?.name ?? "—";
 
+  const viewingSelf = !isHR || selectedEmployeeId === me?.id;
+
   return (
     <>
       <Topbar
         title="Leaves"
         subtitle={
           selectedEmployee
-            ? `Leave requests for ${selectedEmployee.full_name}`
+            ? viewingSelf
+              ? "Your leave requests and balance"
+              : `Leave requests for ${selectedEmployee.full_name}`
             : "Employee leave requests"
         }
       />
 
       <div className="space-y-6 p-8">
+        {meError && !isHR && (
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            {meError}
+          </p>
+        )}
 
-        {/* EMPLOYEE SELECTOR */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-500">
-              Employee
-            </label>
-
-            <select
-              value={selectedEmployeeId}
-              onChange={(e) =>
-                setSelectedEmployeeId(e.target.value)
-              }
-              className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-            >
-              {employees.map((employee) => (
-                <option
-                  key={employee.id}
-                  value={employee.id}
-                >
-                  {employee.full_name}
-                </option>
-              ))}
-            </select>
-
-            {selectedEmployee?.gender && (
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-                {selectedEmployee.gender}
-              </span>
+        {/* MANAGER: TEAM APPROVALS QUEUE */}
+        {isManager && (
+          <Card className="overflow-hidden p-0">
+            <div className="border-b border-gray-100 px-5 py-4">
+              <h2 className="text-sm font-bold text-brand-dark">
+                My Team — Pending Approvals
+              </h2>
+              <p className="mt-1 text-xs text-gray-400">
+                Leave requests from your direct reports awaiting your
+                decision.
+              </p>
+            </div>
+            {teamLoading ? (
+              <Loader label="Loading team requests..." />
+            ) : teamRequests.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-gray-400">
+                No pending requests from your team.
+              </p>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {teamRequests.map(({ employee, request }) => (
+                  <div
+                    key={request.id}
+                    className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-brand-dark">
+                        {employee.full_name}
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        {leaveTypeName(request.leave_type_id)} ·{" "}
+                        {new Date(request.start_date).toLocaleDateString()} –{" "}
+                        {new Date(request.end_date).toLocaleDateString()}
+                        {request.reason ? ` · ${request.reason}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleDecision(request.id, "approved")}
+                        className="rounded-md border border-green-200 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-50"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleDecision(request.id, "rejected")}
+                        className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
-          </div>
+          </Card>
+        )}
+
+        {/* HR: COMPANY-WIDE PENDING APPROVALS */}
+        {isHR && (
+          <Card className="overflow-hidden p-0">
+            <div className="border-b border-gray-100 px-5 py-4">
+              <h2 className="text-sm font-bold text-brand-dark">
+                All Pending Approvals
+              </h2>
+              <p className="mt-1 text-xs text-gray-400">
+                Leave requests awaiting a decision, across the whole
+                company — not just your direct reports.
+              </p>
+            </div>
+            {hrPendingLoading ? (
+              <Loader label="Loading pending approvals..." />
+            ) : hrPending.length === 0 ? (
+              <p className="px-5 py-8 text-center text-sm text-gray-400">
+                No pending requests company-wide.
+              </p>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {hrPending.map((item) => (
+                  <div
+                    key={item.request_id}
+                    className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
+                  >
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => jumpToEmployee(item.employee_id)}
+                        className="text-sm font-medium text-brand-dark hover:underline"
+                      >
+                        {item.employee_name}
+                      </button>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        {item.department ?? "—"}
+                        {item.designation ? ` · ${item.designation}` : ""}
+                      </p>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        {leaveTypeName(item.leave_type_id)} ·{" "}
+                        {new Date(item.start_date).toLocaleDateString()} –{" "}
+                        {new Date(item.end_date).toLocaleDateString()}
+                        {item.reason ? ` · ${item.reason}` : ""}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          handleDecision(
+                            item.request_id,
+                            "approved",
+                            item.employee_id === selectedEmployeeId
+                              ? selectedEmployeeId
+                              : undefined
+                          )
+                        }
+                        className="rounded-md border border-green-200 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-50"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleDecision(
+                            item.request_id,
+                            "rejected",
+                            item.employee_id === selectedEmployeeId
+                              ? selectedEmployeeId
+                              : undefined
+                          )
+                        }
+                        className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+
+        {/* EMPLOYEE SELECTOR — HR only */}
+        <div
+          id="employee-view-panel"
+          className="flex flex-wrap items-center justify-between gap-3"
+        >
+          {isHR ? (
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-500">Employee</label>
+              <select
+                value={selectedEmployeeId}
+                onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+              >
+                {me && (
+                  <option value={me.id}>{me.full_name} (You)</option>
+                )}
+                {employees
+                  .filter((e) => e.id !== me?.id)
+                  .map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.full_name}
+                    </option>
+                  ))}
+              </select>
+              {selectedEmployee?.gender && (
+                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                  {selectedEmployee.gender}
+                </span>
+              )}
+            </div>
+          ) : (
+            <h2 className="text-lg font-semibold text-brand-dark">
+              {me ? `${me.full_name}'s Leave` : "My Leave"}
+            </h2>
+          )}
 
           {selectedEmployeeId && (
             <Button
@@ -180,22 +432,21 @@ export default function LeavesPage() {
           )}
         </div>
 
-        {/* EMPLOYEE SUMMARY */}
-        {selectedEmployee && (
-          <Card className="p-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-xs text-gray-400">
-                  Employee
+        {/* LEAVE BALANCE */}
+        {balances.length > 0 && (
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {balances.map((b) => (
+              <Card key={b.leave_type_id} className="p-4">
+                <p className="text-xs text-gray-400">{b.leave_type_name}</p>
+                <p className="mt-1 text-2xl font-semibold text-brand-dark">
+                  {b.days_remaining}
+                  <span className="ml-1 text-xs font-normal text-gray-400">
+                    / {b.annual_quota_days} days left
+                  </span>
                 </p>
-
-                <h2 className="mt-1 text-lg font-semibold text-brand-dark">
-                  {selectedEmployee.full_name}
-                </h2>
-              </div>
-
-            </div>
-          </Card>
+              </Card>
+            ))}
+          </div>
         )}
 
         {error && (
@@ -213,9 +464,10 @@ export default function LeavesPage() {
               <h2 className="text-sm font-bold text-brand-dark">
                 Leave Requests
               </h2>
-
               <p className="mt-1 text-xs text-gray-400">
-                Leave history and requests for the selected employee.
+                {viewingSelf
+                  ? "Your leave history and requests."
+                  : "Leave history and requests for the selected employee."}
               </p>
             </div>
 
@@ -223,30 +475,12 @@ export default function LeavesPage() {
               <table className="w-full text-sm">
                 <thead className="bg-surface-muted text-left text-gray-500">
                   <tr>
-                    <th className="px-5 py-3 font-medium">
-                      Leave Type
-                    </th>
-
-                    <th className="px-5 py-3 font-medium">
-                      Start Date
-                    </th>
-
-                    <th className="px-5 py-3 font-medium">
-                      End Date
-                    </th>
-
-                    <th className="px-5 py-3 font-medium">
-                      Days
-                    </th>
-
-                    <th className="px-5 py-3 font-medium">
-                      Reason
-                    </th>
-
-                    <th className="px-5 py-3 font-medium">
-                      Status
-                    </th>
-
+                    <th className="px-5 py-3 font-medium">Leave Type</th>
+                    <th className="px-5 py-3 font-medium">Start Date</th>
+                    <th className="px-5 py-3 font-medium">End Date</th>
+                    <th className="px-5 py-3 font-medium">Days</th>
+                    <th className="px-5 py-3 font-medium">Reason</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
                     {isHR && (
                       <th className="px-5 py-3 text-right font-medium">
                         Decision
@@ -259,7 +493,6 @@ export default function LeavesPage() {
                   {requests.map((request) => {
                     const start = new Date(request.start_date);
                     const end = new Date(request.end_date);
-
                     const days =
                       Math.floor(
                         (end.getTime() - start.getTime()) /
@@ -269,39 +502,28 @@ export default function LeavesPage() {
                     return (
                       <tr key={request.id}>
                         <td className="px-5 py-3 font-medium text-brand-dark">
-                          {leaveTypeName(
-                            request.leave_type_id
-                          )}
+                          {leaveTypeName(request.leave_type_id)}
                         </td>
-
                         <td className="px-5 py-3 text-gray-600">
                           {start.toLocaleDateString()}
                         </td>
-
                         <td className="px-5 py-3 text-gray-600">
                           {end.toLocaleDateString()}
                         </td>
-
-                        <td className="px-5 py-3 text-gray-600">
-                          {days}
-                        </td>
-
+                        <td className="px-5 py-3 text-gray-600">{days}</td>
                         <td className="px-5 py-3 text-gray-600">
                           {request.reason ?? "—"}
                         </td>
-
                         <td className="px-5 py-3">
                           <span
                             className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
-                              STATUS_STYLES[
-                                request.status
-                              ] ?? "bg-gray-50 text-gray-600"
+                              STATUS_STYLES[request.status] ??
+                              "bg-gray-50 text-gray-600"
                             }`}
                           >
                             {request.status}
                           </span>
                         </td>
-
                         {isHR && (
                           <td className="px-5 py-3 text-right">
                             {request.status === "pending" && (
@@ -310,19 +532,20 @@ export default function LeavesPage() {
                                   onClick={() =>
                                     handleDecision(
                                       request.id,
-                                      "approved"
+                                      "approved",
+                                      selectedEmployeeId
                                     )
                                   }
                                   className="text-xs font-medium text-green-600 hover:underline"
                                 >
                                   Approve
                                 </button>
-
                                 <button
                                   onClick={() =>
                                     handleDecision(
                                       request.id,
-                                      "rejected"
+                                      "rejected",
+                                      selectedEmployeeId
                                     )
                                   }
                                   className="text-xs font-medium text-red-600 hover:underline"
@@ -343,7 +566,7 @@ export default function LeavesPage() {
                         colSpan={isHR ? 7 : 6}
                         className="px-5 py-10 text-center text-gray-400"
                       >
-                        No leave requests for this employee.
+                        No leave requests yet.
                       </td>
                     </tr>
                   )}
