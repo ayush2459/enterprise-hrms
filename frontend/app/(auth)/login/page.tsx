@@ -33,6 +33,8 @@ export default function LoginPage() {
       const result = await authService.login(identifier, password);
 
       if (result.status === "success" && result.tokens) {
+        sessionStorage.setItem("access_token", result.tokens.access_token);
+        sessionStorage.setItem("refresh_token", result.tokens.refresh_token);
         setTokens(result.tokens.access_token, result.tokens.refresh_token);
         const me = await authService.me();
         setUser(me);
