@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Suspense } from "react";
 import { useRouter } from "next/navigation";
 import "@/styles/enterprise-v2.css";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -52,7 +53,9 @@ export default function DashboardLayout({
       <div className="flex min-h-screen bg-[#f5f7fb]">
         <Sidebar />
         <main className="min-w-0 flex-1 bg-[#f5f7fb]">
-          <ModuleCommandCenter />
+          <Suspense fallback={null}>
+            <ModuleCommandCenter />
+          </Suspense>
           <UniversalPageSearch />
           {children}
         </main>
