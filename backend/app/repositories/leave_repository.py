@@ -33,6 +33,10 @@ class LeaveTypeRepository:
         await self.db.refresh(leave_type)
         return leave_type
 
+    async def delete(self, leave_type: LeaveType) -> None:
+        await self.db.delete(leave_type)
+        await self.db.flush()
+
 
 class LeaveRequestRepository:
     def __init__(self, db: AsyncSession):
