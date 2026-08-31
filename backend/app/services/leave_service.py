@@ -10,6 +10,7 @@ from app.models.leave_request import LeaveRequest
 from app.models.leave_type import LeaveType
 from app.models.user import User
 from app.repositories.employee_repository import EmployeeRepository
+from app.repositories.document_repository import DocumentRepository
 from app.repositories.leave_repository import LeaveRequestRepository, LeaveTypeRepository
 from app.schemas.leave import LeaveBalance, PendingApprovalItem
 from app.services.audit_service import AuditService
@@ -41,6 +42,7 @@ class LeaveService:
         self.leave_types = LeaveTypeRepository(db)
         self.requests = LeaveRequestRepository(db)
         self.employees = EmployeeRepository(db)
+        self.documents = DocumentRepository(db)
         self.audit = AuditService(db)
 
     # ---- Leave types (HR only to create; everyone can list) ----
@@ -147,6 +149,7 @@ class LeaveService:
                 detail="Leave type not found.",
             )
 
+
         if payload.eligibility_gender not in {"all", "male", "female"}:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -203,6 +206,44 @@ class LeaveService:
 
         return result
 
+    async def delete_leave_type(
+        self,
+        leave_type_id: UUID,
+        requester: User,
+    ) -> None:
+        if requester.role not in HR_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="HR only.",
+            )
+
+        leave_type = await self.leave_types.get_by_id(leave_type_id)
+        if leave_type is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Leave type not found.",
+            )
+
+        # Do not leave orphaned leave requests. Remove requests belonging
+        # exclusively to this policy before deleting the policy.
+        requests = await self.requests.list_by_leave_type(leave_type_id)
+
+        for request in requests:
+            await self.db.delete(request)
+
+        await self.db.flush()
+        await self.db.delete(leave_type)
+        await self.db.flush()
+
+        await redis_client.publish(
+            "broadcast:leave_policies",
+            __import__("json").dumps({
+                "type": "leave_policy_updated",
+                "action": "deleted",
+                "leave_type_id": str(leave_type_id),
+            }),
+        )
+
     # ---- Access ----
     async def _assert_view_access(self, employee_id, requester: User) -> None:
         if requester.role in HR_ROLES:
@@ -231,6 +272,7 @@ class LeaveService:
         end_date,
         reason: str | None,
         requester: User,
+        leave_document_id: UUID | None = None,
     ) -> LeaveRequest:
         employee = await self.employees.get_by_id(employee_id)
 
@@ -264,6 +306,39 @@ class LeaveService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"{leave_type.name} is currently inactive.",
             )
+
+        # ---------------------------------------------------------
+        # SUPPORTING DOCUMENT
+        # ---------------------------------------------------------
+        if leave_type.requires_document:
+            if leave_document_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"A supporting document is required for {leave_type.name}.",
+                )
+
+            document = await self.documents.get_by_id(leave_document_id)
+
+            if document is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Supporting document not found.",
+                )
+
+            if document.employee_id != employee_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Supporting document does not belong to this employee.",
+                )
+
+        elif leave_document_id is not None:
+            document = await self.documents.get_by_id(leave_document_id)
+
+            if document is None or document.employee_id != employee_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid supporting document.",
+                )
 
         # ---------------------------------------------------------
         # DATE VALIDATION
@@ -440,6 +515,7 @@ class LeaveService:
             start_date=start_date,
             end_date=end_date,
             reason=reason.strip() if reason else None,
+            leave_document_id=leave_document_id,
         )
 
         await self.requests.create(request)
@@ -461,11 +537,21 @@ class LeaveService:
         if requester.role not in HR_ROLES:
             employee = await self.employees.get_by_id(request.employee_id)
             requester_employee = await self.employees.get_by_user_id(requester.id)
+
+            # A manager may approve direct-report leave requests,
+            # but may never approve their own leave request.
+            if employee is not None and employee.user_id == requester.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only HR can approve or reject a manager's own leave request.",
+                )
+
             is_manager = (
                 requester_employee is not None
                 and employee is not None
                 and employee.reporting_manager_id == requester_employee.id
             )
+
             if not is_manager:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,

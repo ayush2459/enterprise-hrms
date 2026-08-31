@@ -207,3 +207,39 @@ async def reactivate_employee(
     updated = await EmployeeService(db).reactivate_employee(employee, current_user)
     await db.commit()
     return EmployeeReadFull.model_validate(updated)
+
+
+@router.delete(
+    "/{employee_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[
+        Depends(
+            require_roles(
+                RoleEnum.HR_ADMIN,
+                RoleEnum.HR_EXECUTIVE,
+                RoleEnum.SYSTEM_ADMIN,
+            )
+        )
+    ],
+)
+async def delete_employee_permanently(
+    employee_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete an employee and their login account.
+
+    HR-only destructive operation. This is not an offboarding action.
+    The employee and all employee-owned database records are removed.
+    """
+    employee = await EmployeeRepository(db).get_by_id(employee_id)
+
+    if employee is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found",
+        )
+
+    await EmployeeService(db).delete_employee(employee, current_user)
+    await db.commit()
+    return None

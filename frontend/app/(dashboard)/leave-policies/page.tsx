@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Users, Banknote, Clock3 } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Banknote, Clock3 } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -71,6 +71,43 @@ export default function LeavePoliciesPage() {
     return () => {
       cancelled = true;
       window.clearInterval(interval);
+    };
+  }, []);
+
+  const handleDelete = async (leaveType: LeaveType) => {
+    const confirmed = window.confirm(
+      `Permanently delete "${leaveType.name}"? This will remove the policy and its leave requests.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setError(null);
+      await leaveService.deleteType(leaveType.id);
+      setLeaveTypes((current) =>
+        current.filter((item) => item.id !== leaveType.id)
+      );
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.detail ??
+          "Could not delete leave policy."
+      );
+    }
+  };
+
+  useEffect(() => {
+    const handleRealtime = (event: Event) => {
+      const detail = (event as CustomEvent<{ type?: string }>).detail;
+
+      if (detail?.type === "leave_policy_updated") {
+        void load();
+      }
+    };
+
+    window.addEventListener("hrhub:realtime", handleRealtime);
+
+    return () => {
+      window.removeEventListener("hrhub:realtime", handleRealtime);
     };
   }, []);
 
@@ -177,14 +214,24 @@ export default function LeavePoliciesPage() {
                     </div>
 
                     {isHR && (
-                      <button
-                        type="button"
-                        onClick={() => setEditingLeaveType(lt)}
-                        className="rounded-lg border border-gray-200 p-2 text-gray-400 hover:border-brand hover:text-brand"
-                        title="Edit leave policy"
-                      >
-                        <Pencil size={14} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingLeaveType(lt)}
+                          className="rounded-lg border border-gray-200 p-2 text-gray-400 hover:border-brand hover:text-brand"
+                          title="Edit leave policy"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(lt)}
+                          className="rounded-lg border border-red-100 p-2 text-red-400 hover:border-red-300 hover:text-red-600"
+                          title="Delete leave policy"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     )}
                   </div>
 

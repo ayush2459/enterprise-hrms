@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { Check, Clock3, Users, CalendarDays, TrendingUp, X, ArrowUpRight } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { WorkspaceShell } from "@/components/workspaces/WorkspaceShell";
+import { ApplyLeaveModal } from "@/components/leaves/ApplyLeaveModal";
 import { AccountSettingsCard } from "@/components/workspaces/AccountSettingsCard";
 import { authService } from "@/services/auth.service";
 import { employeeService } from "@/services/employee.service";
@@ -26,6 +27,10 @@ function ManagerPageContent() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [leaveTypes, setLeaveTypes] = useState<Awaited<ReturnType<typeof leaveService.listTypes>>>([]);
+  const [leaveBalances, setLeaveBalances] = useState<Awaited<ReturnType<typeof leaveService.getBalance>>>([]);
+  const [showApplyLeave, setShowApplyLeave] = useState(false);
+
   const [cycles, setCycles] = useState<ReviewCycle[]>([]);
   const [activeCycle, setActiveCycle] = useState<ReviewCycle | null>(null);
   const [reviews, setReviews] = useState<Record<string, PerformanceReview | null>>({});
@@ -64,7 +69,36 @@ function ManagerPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, team.length]);
 
-  const load = async () => {
+
+  const loadMyLeaveData = async (employeeId: string) => {
+    try {
+      const [types, balances] = await Promise.all([
+        leaveService.listTypes(),
+        leaveService.getBalance(employeeId),
+      ]);
+      setLeaveTypes(types.filter((type) => type.is_active !== false));
+      setLeaveBalances(balances);
+    } catch (e) {
+      console.error("Failed to load manager leave data:", e);
+    }
+  };
+
+  
+  const loadManagerLeaveData = async (employeeId: string) => {
+    try {
+      const [types, balances] = await Promise.all([
+        leaveService.listTypes(),
+        leaveService.getBalance(employeeId),
+      ]);
+
+      setLeaveTypes(types.filter((type) => type.is_active !== false));
+      setLeaveBalances(balances);
+    } catch (error) {
+      console.error("Could not load manager leave policies:", error);
+    }
+  };
+
+const load = async () => {
     try {
       setError("");
       const me = await authService.me();
@@ -76,6 +110,7 @@ function ManagerPageContent() {
       if (!me.employee_id) throw new Error("Manager account is not linked to an employee record.");
       const mine = await employeeService.getMyProfile();
       setProfile(mine);
+      await loadMyLeaveData(mine.id);
       const org = await teamService.getOrgSnippet(mine.id);
       const reports = org.direct_reports || [];
 
@@ -167,6 +202,12 @@ function ManagerPageContent() {
                   <span className="rounded-full bg-emerald-400/20 px-3 py-1.5 text-emerald-100">Live team data</span>
                 </div>
               </div>
+              <button
+                onClick={() => setShowApplyLeave(true)}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-xs font-bold text-white shadow-lg hover:bg-white/20"
+              >
+                Apply for leave <CalendarDays size={14} />
+              </button>
               <button onClick={() => router.push("/manager?tab=approvals")} className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-xs font-bold text-blue-700 shadow-lg hover:-translate-y-0.5">
                 Review approvals <ArrowUpRight size={14} />
               </button>
@@ -376,6 +417,21 @@ function ManagerPageContent() {
           </div>
         </div>
       </div>
+      {showApplyLeave && profile && (
+        <ApplyLeaveModal
+          employeeId={profile.id}
+          employeeGender={profile.gender}
+          leaveTypes={leaveTypes}
+          balances={leaveBalances}
+          onClose={() => setShowApplyLeave(false)}
+          onApplied={() => {
+            setShowApplyLeave(false);
+            void loadMyLeaveData(profile.id);
+            void load();
+          }}
+        />
+      )}
+
     </WorkspaceShell>
   );
 }

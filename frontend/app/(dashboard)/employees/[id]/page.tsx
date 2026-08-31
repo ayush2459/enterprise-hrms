@@ -1,5 +1,14 @@
 "use client";
 
+/*
+ * Employee deletion synchronization.
+ * Uses BroadcastChannel when available and falls back to a DOM event.
+ * This is intentionally client-only and does not replace backend auth.
+ */
+
+
+import PermanentDeleteEmployee from "@/components/employees/PermanentDeleteEmployee";
+
 import { holidayService } from "@/services/holiday.service";
 import { projectService } from "@/services/project.service";
 import { teamService } from "@/services/team.service";
@@ -432,6 +441,7 @@ export default function EmployeeProfilePage() {
       <>
         <Topbar title="Employee Profile" />
         <div className="p-8">
+
           <Loader label="Loading profile..." />
         </div>
       </>
@@ -496,6 +506,15 @@ export default function EmployeeProfilePage() {
           </div>
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-brand-dark">{employee.full_name}</h1>
+              {isHR && (
+                <div className="mt-4 flex justify-end">
+                  <PermanentDeleteEmployee
+                    employeeId={String(employee.id)}
+                    isHR={isHR}
+                  />
+                </div>
+              )}
+
             <p className="text-sm text-gray-500">
               {employee.designation ?? "—"} · {employee.department ?? "—"}
             </p>

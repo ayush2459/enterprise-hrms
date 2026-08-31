@@ -333,6 +333,101 @@ class EmployeeService:
 
         return employee
 
+
+    async def delete_employee(
+        self,
+        employee: Employee,
+        requester: User,
+    ) -> None:
+        """Permanently remove an employee and their login account.
+
+        This is intentionally different from offboarding:
+        - the Employee row is deleted permanently
+        - the linked User row is deleted permanently
+        - employee-owned DB records are removed through FK cascades
+        - manager references are cleared through ON DELETE SET NULL
+        - uploaded document files are removed explicitly
+        - an employee_deleted realtime event is published
+        """
+
+        if requester.role not in FULL_ACCESS_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Only HR Admin, HR Executive, or System Admin "
+                    "can permanently delete an employee."
+                ),
+            )
+
+        employee_id = employee.id
+        user_id = employee.user_id
+
+        # Remove physical uploaded document files before the DB rows
+        # disappear through ON DELETE CASCADE.
+        from pathlib import Path
+        from app.core.config import settings
+        from app.repositories.document_repository import DocumentRepository
+
+        documents = await DocumentRepository(self.db).list_by_employee(employee_id)
+
+        upload_root = Path(settings.UPLOAD_ROOT)
+
+        for document in documents:
+            try:
+                file_path = Path(document.file_path)
+                if file_path.exists():
+                    file_path.unlink()
+            except OSError:
+                # File cleanup should not prevent the database deletion.
+                pass
+
+        # Capture the employee's manager before deletion for realtime
+        # consumers that may need to refresh that manager's team.
+        manager_id = employee.reporting_manager_id
+
+        # Delete employee first. PostgreSQL cascades employee-owned rows
+        # such as documents, leave requests, attendance, payroll, assets,
+        # insurance and performance records according to their FK rules.
+        await self.repo.delete(employee)
+
+        # Employee.user_id points to users with ON DELETE CASCADE in the
+        # opposite direction, so deleting Employee does NOT remove User.
+        # Explicitly remove the login account.
+        user = await self.users.get_by_id(user_id)
+        if user is not None:
+            await self.db.delete(user)
+            await self.db.flush()
+
+        await self.audit.log(
+            requester.id,
+            "employee_delete_permanent",
+            "employee",
+            str(employee_id),
+        )
+
+        from app.core.redis import redis_client
+
+        await redis_client.publish(
+            "hrhub:realtime",
+            json.dumps({
+                "type": "employee_deleted",
+                "employee_id": str(employee_id),
+                "user_id": str(user_id),
+                "manager_id": str(manager_id) if manager_id else None,
+            }),
+        )
+
+        if manager_id:
+            manager = await self.repo.get_by_id(manager_id)
+            if manager:
+                await redis_client.publish(
+                    f"user:{manager.user_id}",
+                    json.dumps({
+                        "type": "team_updated",
+                        "employee_id": str(employee_id),
+                    }),
+                )
+
     async def reactivate_employee(
         self,
         employee: Employee,

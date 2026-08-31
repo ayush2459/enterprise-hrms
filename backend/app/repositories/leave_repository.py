@@ -10,6 +10,7 @@ from app.models.leave_type import LeaveType
 from app.models.employee import Employee
 
 
+
 class LeaveTypeRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -102,3 +103,16 @@ class LeaveRequestRepository:
             )
         )
         return result.scalar_one()
+
+
+    async def list_by_leave_type(
+        self,
+        leave_type_id: UUID,
+    ) -> list[LeaveRequest]:
+        result = await self.db.execute(
+            select(LeaveRequest).where(
+                LeaveRequest.leave_type_id == leave_type_id
+            )
+        )
+        return list(result.scalars().all())
+

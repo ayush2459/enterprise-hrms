@@ -139,6 +139,17 @@ class EmployeeRepository:
         await self.db.refresh(employee)
         return employee
 
+
+    async def delete(self, employee: Employee) -> None:
+        """Permanently delete an employee.
+
+        Employee-owned rows are removed by PostgreSQL ON DELETE CASCADE.
+        Reporting-manager references use ON DELETE SET NULL.
+        """
+        await self.db.delete(employee)
+        await self.db.flush()
+
+
     async def save(self, employee: Employee) -> Employee:
         await self.db.flush()
         await self.db.refresh(employee)

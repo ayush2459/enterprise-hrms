@@ -29,8 +29,23 @@ class DocumentService:
 
     async def _assert_can_view(self, employee: Employee, requester: User) -> None:
         is_self = employee.user_id == requester.id
-        if not is_self and requester.role not in FULL_ACCESS_ROLES:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized.")
+
+        if is_self or requester.role in FULL_ACCESS_ROLES:
+            return
+
+        # Reporting managers may view documents belonging to their
+        # direct-report employees.
+        requester_employee = await self.employees.get_by_user_id(requester.id)
+        is_manager = (
+            requester_employee is not None
+            and employee.reporting_manager_id == requester_employee.id
+        )
+
+        if not is_manager:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized.",
+            )
 
     async def list_for_employee(self, employee_id: UUID, requester: User) -> list[Document]:
         employee = await self.employees.get_by_id(employee_id)

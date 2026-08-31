@@ -13,7 +13,135 @@ import { employeeService } from "@/services/employee.service";
 import { usePageSearch } from "@/components/layout/PageSearchContext";
 import type { EmployeePublic } from "@/types";
 
+
+function EmployeeRealtimeSync({
+  onRefresh,
+}: {
+  onRefresh: () => void;
+}) {
+  useEffect(() => {
+    const refresh = () => {
+      try {
+        onRefresh();
+      } catch {
+        // Realtime synchronization must never crash the page.
+      }
+    };
+
+    const handleEmployeeDeleted = () => {
+      refresh();
+    };
+
+    window.addEventListener(
+      "hrhub:employee_deleted",
+      handleEmployeeDeleted
+    );
+
+    window.addEventListener(
+      "hrhub:employee-directory-refresh",
+      refresh
+    );
+
+    let channel: BroadcastChannel | null = null;
+
+    if (typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel("hrhub-employees");
+
+      channel.addEventListener("message", (event) => {
+        if (event.data?.type === "employee_deleted") {
+          refresh();
+        }
+      });
+    }
+
+    return () => {
+      window.removeEventListener(
+        "hrhub:employee_deleted",
+        handleEmployeeDeleted
+      );
+
+      window.removeEventListener(
+        "hrhub:employee-directory-refresh",
+        refresh
+      );
+
+      channel?.close();
+    };
+  }, [onRefresh]);
+
+  return null;
+}
+
 export default function EmployeesPage() {
+useEffect(() => {
+    let cancelled = false;
+    let channel: BroadcastChannel | null = null;
+
+    const refreshEmployees = async () => {
+      if (cancelled) return;
+
+      try {
+        /*
+         * Reuse the page's existing employee loading mechanism.
+         * Dispatching this event lets the existing loader perform the
+         * authenticated request without duplicating API logic here.
+         */
+        window.dispatchEvent(
+          new CustomEvent("hrhub:employee-directory-refresh")
+        );
+      } catch {
+        // Realtime/polling is supplemental; never break the page.
+      }
+    };
+
+    const handleDeleted = (event: Event) => {
+      const custom = event as CustomEvent;
+      const employeeId =
+        custom.detail?.employeeId ??
+        custom.detail?.id ??
+        null;
+
+      /*
+       * Ask the existing directory loader to refresh. If the deleted
+       * employee is already gone, the returned list naturally removes it.
+       */
+      window.dispatchEvent(
+        new CustomEvent("hrhub:employee-directory-refresh", {
+          detail: { employeeId },
+        })
+      );
+    };
+
+    window.addEventListener("hrhub:employee_deleted", handleDeleted);
+
+    if (typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel("hrhub-employees");
+      channel.addEventListener("message", (event) => {
+        if (event.data?.type === "employee_deleted") {
+          handleDeleted(
+            new CustomEvent("hrhub:employee_deleted", {
+              detail: event.data,
+            })
+          );
+        }
+      });
+    }
+
+    /*
+     * Five-second fallback.
+     * This is deliberately slow enough to avoid hammering the API while
+     * still making the directory behave as realtime when push is down.
+     */
+    const interval = window.setInterval(refreshEmployees, 5000);
+return () => {
+      cancelled = true;
+      window.removeEventListener("hrhub:employee_deleted", handleDeleted);
+      window.clearInterval(interval);
+      channel?.close();
+    };
+  }, []);
+
+
   const router = useRouter();
   const { query, setQuery } = usePageSearch();
   const [employees, setEmployees] = useState<EmployeePublic[]>([]);

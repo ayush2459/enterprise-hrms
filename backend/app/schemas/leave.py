@@ -45,6 +45,7 @@ class LeaveRequestCreate(BaseModel):
     start_date: date
     end_date: date
     reason: str | None = None
+    leave_document_id: uuid.UUID | None = None
 
 
 class LeaveRequestDecision(BaseModel):

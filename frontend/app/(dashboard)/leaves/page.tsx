@@ -249,6 +249,14 @@ export default function LeavesPage() {
 
   const leaveTypeName = (id: string) =>
     leaveTypes.find((lt) => lt.id === id)?.name ?? "—";
+  const openLeaveDocument = (documentId: string) => {
+    window.open(
+      `/api/backend/documents/${documentId}/download`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
 
   const viewingSelf = !isHR || selectedEmployeeId === me?.id;
 
@@ -323,6 +331,17 @@ export default function LeavesPage() {
                         {new Date(request.end_date).toLocaleDateString()}
                         {request.reason ? ` · ${request.reason}` : ""}
                       </p>
+                      {request.leave_document_id && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openLeaveDocument(request.leave_document_id!)
+                          }
+                          className="mt-2 text-xs font-medium text-brand underline"
+                        >
+                          View supporting document
+                        </button>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <button

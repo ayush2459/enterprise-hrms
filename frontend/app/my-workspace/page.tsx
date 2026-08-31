@@ -1,5 +1,6 @@
 "use client";
 
+import { ApplyLeaveModal } from "@/components/leaves/ApplyLeaveModal";
 import { Suspense, useEffect, useState } from "react";
 import { ArrowUpRight, CalendarDays, CheckCircle2, Clock3, FileText, WalletCards } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,6 +28,9 @@ function MyWorkspacePageContent() {
   const [org, setOrg] = useState<OrgSnippet | null>(null);
   const [loading, setLoading] = useState(true);
   const [showApply, setShowApply] = useState(false);
+  const [leaveTypes, setLeaveTypes] = useState<Awaited<ReturnType<typeof leaveService.listTypes>>>([]);
+  const [leaveBalances, setLeaveBalances] = useState<Awaited<ReturnType<typeof leaveService.getBalance>>>([]);
+
   const [form, setForm] = useState({ type: "", start: "", end: "", reason: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -257,6 +261,19 @@ function MyWorkspacePageContent() {
           </form>
         </div>
       )}
+      {showApply && profile && (
+        <ApplyLeaveModal
+          employeeId={profile.id}
+          employeeGender={profile.gender}
+          leaveTypes={leaveTypes}
+          balances={leaveBalances}
+          onClose={() => setShowApply(false)}
+          onApplied={() => {
+            setShowApply(false);
+          }}
+        />
+      )}
+
     </WorkspaceShell>
   );
 }

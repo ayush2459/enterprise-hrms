@@ -1,3 +1,4 @@
+from pathlib import Path
 """
 Centralized application configuration.
 
@@ -54,7 +55,7 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "Enterprise HR Portal <no-reply@example.com>"
 
     # ---- File uploads (Section 5.2: Documents) ----
-    UPLOAD_ROOT: str = "/app/uploads"
+    UPLOAD_ROOT: str = str(Path(__file__).resolve().parents[2] / "uploads")
     MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB, matches Section 7's validation cap
     ALLOWED_UPLOAD_MIME_TYPES: List[str] = [
         "application/pdf",

@@ -70,6 +70,17 @@ async def update_leave_type(
     return result
 
 
+@router.delete("/types/{leave_type_id}", status_code=204)
+async def delete_leave_type(
+    leave_type_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await LeaveService(db).delete_leave_type(leave_type_id, current_user)
+    await db.commit()
+    return None
+
+
 @router.get("/pending", response_model=list[PendingApprovalItem])
 async def list_pending_approvals(
     current_user: User = Depends(get_current_user),
@@ -104,7 +115,13 @@ async def apply_for_leave(
     db: AsyncSession = Depends(get_db),
 ):
     result = await LeaveService(db).apply(
-        employee_id, payload.leave_type_id, payload.start_date, payload.end_date, payload.reason, current_user
+        employee_id,
+        payload.leave_type_id,
+        payload.start_date,
+        payload.end_date,
+        payload.reason,
+        current_user,
+        payload.leave_document_id,
     )
     await db.commit()
     return result

@@ -376,6 +376,7 @@ export interface LeaveRequest {
   id: string;
   employee_id: string;
   leave_type_id: string;
+  leave_document_id?: string | null;
   start_date: string;
   end_date: string;
   reason: string | null;
