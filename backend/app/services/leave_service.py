@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enums import LeaveRequestStatus, RoleEnum
+from app.core.redis import redis_client
 from app.models.leave_request import LeaveRequest
 from app.models.leave_type import LeaveType
 from app.models.user import User
@@ -113,6 +114,17 @@ class LeaveService:
         )
 
         await self.leave_types.create(leave_type)
+
+        await redis_client.publish(
+            "broadcast:leave_policies",
+            __import__("json").dumps({
+                "type": "leave_policy_updated",
+                "action": "created",
+                "leave_type_id": str(leave_type.id),
+                "is_active": leave_type.is_active,
+            }),
+        )
+
         return leave_type
 
     async def update_leave_type(
@@ -177,7 +189,19 @@ class LeaveService:
         leave_type.advance_notice_days = payload.advance_notice_days
         leave_type.is_active = payload.is_active
 
-        return await self.leave_types.update(leave_type)
+        result = await self.leave_types.update(leave_type)
+
+        await redis_client.publish(
+            "broadcast:leave_policies",
+            __import__("json").dumps({
+                "type": "leave_policy_updated",
+                "action": "updated",
+                "leave_type_id": str(leave_type.id),
+                "is_active": leave_type.is_active,
+            }),
+        )
+
+        return result
 
     # ---- Access ----
     async def _assert_view_access(self, employee_id, requester: User) -> None:

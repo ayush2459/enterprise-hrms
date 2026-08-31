@@ -11,6 +11,7 @@ import { employeeService } from "@/services/employee.service";
 import { teamService } from "@/services/team.service";
 import type { EmployeePublic, OrgSnippet, TeamMember, TeamStatusRow } from "@/types";
 import { usePageSearch } from "@/components/layout/PageSearchContext";
+import { useRealtime } from "@/hooks/useRealtime";
 
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-green-50 text-green-700",
@@ -34,6 +35,7 @@ function getInitials(name: string) {
 }
 
 function StatusBadge({ status }: { status: string }) {
+
   return (
     <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`}>
       {STATUS_LABELS[status] ?? status}
@@ -247,6 +249,9 @@ export default function TeamsPage() {
     ...(selfMember ? [selfMember] : []),
     ...(org?.direct_reports ?? []),
   ];
+
+
+
 
   return (
     <>

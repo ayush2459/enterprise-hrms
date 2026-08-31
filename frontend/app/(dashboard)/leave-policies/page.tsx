@@ -11,6 +11,7 @@ import { leaveService } from "@/services/leave.service";
 import { useAuthStore } from "@/store/auth.store";
 import type { LeaveType } from "@/types";
 import { usePageSearch } from "@/components/layout/PageSearchContext";
+import { useRealtime } from "@/hooks/useRealtime";
 
 const HR_ROLES = ["hr_admin", "hr_executive", "system_admin"];
 
@@ -18,6 +19,8 @@ export default function LeavePoliciesPage() {
   const { query: pageSearchQuery } = usePageSearch();
   const { user } = useAuthStore();
   const isHR = !!user && HR_ROLES.includes(user.role);
+
+  useRealtime();
 
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +42,36 @@ export default function LeavePoliciesPage() {
   };
 
   useEffect(() => {
-    load();
+    let cancelled = false;
+
+    const refresh = async () => {
+      try {
+        const result = await leaveService.listTypes();
+        if (!cancelled) {
+          setLeaveTypes(result);
+          setError(null);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Could not load leave policies.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void refresh();
+
+    const interval = window.setInterval(() => {
+      void refresh();
+    }, 3000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, []);
 
   const q = pageSearchQuery.trim().toLowerCase();
@@ -56,30 +88,11 @@ export default function LeavePoliciesPage() {
   });
 
   const activeLeaveTypes = filteredLeaveTypes.filter((lt) => lt.is_active);
-
-  if (!isHR) {
-    return (
-      <>
-        <Topbar
-          title="Leave Policies"
-          subtitle="Organization-wide leave policies"
-        />
-        <div className="p-8">
-          <Card>
-            <p className="text-sm text-gray-500">
-              Only HR administrators can manage leave policies.
-            </p>
-          </Card>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <Topbar
         title="Leave Policies"
-        subtitle="Organization-wide leave policy configuration"
+        subtitle="Organization-wide leave policies and eligibility"
       />
 
       <div className="space-y-6 p-8">
@@ -89,18 +102,19 @@ export default function LeavePoliciesPage() {
               Organization Leave Policies
             </h1>
             <p className="mt-1 text-xs text-gray-400">
-              Policies automatically apply to all eligible employees based on
-              gender and policy configuration.
+              View the leave policies available to employees. HR manages policy configuration.
             </p>
           </div>
 
-          <Button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus size={16} />
-            Add Leave Policy
-          </Button>
+          {isHR && (
+            <Button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Add Leave Policy
+            </Button>
+          )}
         </div>
 
         {error && (
@@ -162,14 +176,16 @@ export default function LeavePoliciesPage() {
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setEditingLeaveType(lt)}
-                      className="rounded-lg border border-gray-200 p-2 text-gray-400 hover:border-brand hover:text-brand"
-                      title="Edit leave policy"
-                    >
-                      <Pencil size={14} />
-                    </button>
+                    {isHR && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingLeaveType(lt)}
+                        className="rounded-lg border border-gray-200 p-2 text-gray-400 hover:border-brand hover:text-brand"
+                        title="Edit leave policy"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    )}
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 gap-2">

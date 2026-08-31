@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = 5432
 
     # ---- Redis ----
-    REDIS_URL: str = "redis://redis:6379/0"
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     # ---- CORS ----
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]

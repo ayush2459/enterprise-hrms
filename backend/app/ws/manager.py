@@ -1,6 +1,7 @@
 import json
 from fastapi import WebSocket
 
+
 class ConnectionManager:
     def __init__(self):
         self.active: dict[str, set[WebSocket]] = {}
@@ -17,7 +18,15 @@ class ConnectionManager:
                 self.active.pop(user_id, None)
 
     async def send_to_user(self, user_id: str, message: dict):
-        for ws in self.active.get(user_id, set()):
-            await ws.send_text(json.dumps(message))
+        for ws in list(self.active.get(user_id, set())):
+            try:
+                await ws.send_text(json.dumps(message))
+            except Exception:
+                self.disconnect(user_id, ws)
+
+    async def broadcast(self, message: dict):
+        for user_id in list(self.active.keys()):
+            await self.send_to_user(user_id, message)
+
 
 manager = ConnectionManager()

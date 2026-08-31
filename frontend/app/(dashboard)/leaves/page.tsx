@@ -13,6 +13,7 @@ import { ApplyLeaveModal } from "@/components/leaves/ApplyLeaveModal";
 import { employeeService } from "@/services/employee.service";
 import { leaveService } from "@/services/leave.service";
 import { useAuthStore } from "@/store/auth.store";
+import { useRealtime } from "@/hooks/useRealtime";
 
 import type {
   EmployeeFull,
@@ -31,6 +32,8 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function LeavesPage() {
+  useRealtime();
+
   const { query: pageSearchQuery } = usePageSearch();
   const { user } = useAuthStore();
   const isHR = !!user && HR_ROLES.includes(user.role);
@@ -63,9 +66,31 @@ export default function LeavesPage() {
       employeeService.list(0, 1000, true).then(setEmployees).catch(() => {});
     }
 
-    leaveService.listTypes().then(setLeaveTypes).catch(() => {
-      setError("Could not load leave policies.");
-    });
+    let cancelled = false;
+
+    const refreshLeaveTypes = async () => {
+      try {
+        const types = await leaveService.listTypes();
+        if (!cancelled) {
+          setLeaveTypes(types);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("Could not load leave policies.");
+        }
+      }
+    };
+
+    void refreshLeaveTypes();
+
+    const leavePolicyInterval = window.setInterval(() => {
+      void refreshLeaveTypes();
+    }, 3000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(leavePolicyInterval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHR]);
 
@@ -226,6 +251,22 @@ export default function LeavesPage() {
     leaveTypes.find((lt) => lt.id === id)?.name ?? "—";
 
   const viewingSelf = !isHR || selectedEmployeeId === me?.id;
+
+  useEffect(() => {
+    const handleRealtime = (event: Event) => {
+      const detail = (event as CustomEvent<{ type?: string }>).detail;
+
+      if (detail?.type === "leave_policy_updated") {
+        void leaveService.listTypes().then(setLeaveTypes);
+      }
+    };
+
+    window.addEventListener("hrhub:realtime", handleRealtime);
+
+    return () => {
+      window.removeEventListener("hrhub:realtime", handleRealtime);
+    };
+  }, []);
 
   return (
     <>

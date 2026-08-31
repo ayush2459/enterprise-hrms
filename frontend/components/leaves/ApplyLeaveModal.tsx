@@ -35,39 +35,11 @@ export function ApplyLeaveModal({
   onClose: () => void;
   onApplied: () => void;
 }) {
-  const normalizedGender = employeeGender?.trim().toLowerCase() || null;
-
+  // Show every active leave policy in the selector.
+  // Eligibility is still enforced by the backend when the request is submitted.
   const eligibleLeaveTypes = useMemo(() => {
-    return leaveTypes.filter((leaveType) => {
-      if (leaveType.is_active === false) return false;
-
-      const eligibility = leaveType.eligibility_gender ?? "all";
-
-      // Universal policies are always available.
-      if (eligibility === "all") {
-        return true;
-      }
-
-      // Gender-specific policies require a known employee gender.
-      if (!normalizedGender) {
-        return false;
-      }
-
-      // Support common employee gender values.
-      const normalizedEmployeeGender =
-        normalizedGender === "m" ||
-        normalizedGender === "man" ||
-        normalizedGender === "men"
-          ? "male"
-          : normalizedGender === "f" ||
-            normalizedGender === "woman" ||
-            normalizedGender === "women"
-            ? "female"
-            : normalizedGender;
-
-      return eligibility === normalizedEmployeeGender;
-    });
-  }, [leaveTypes, normalizedGender]);
+    return leaveTypes.filter((leaveType) => leaveType.is_active !== false);
+  }, [leaveTypes]);
 
   const [leaveTypeId, setLeaveTypeId] = useState(
     eligibleLeaveTypes[0]?.id ?? ""
