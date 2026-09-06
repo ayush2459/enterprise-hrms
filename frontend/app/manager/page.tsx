@@ -12,7 +12,8 @@ import { teamService } from "@/services/team.service";
 import { leaveService } from "@/services/leave.service";
 import { attendanceService } from "@/services/attendance.service";
 import { performanceService } from "@/services/performance.service";
-import type { EmployeeFull, LeaveRequest, PerformanceReview, ReviewCycle, TeamMember, User } from "@/types";
+import { payrollService } from "@/services/payroll.service";
+import type { EmployeeFull, EmployeePublic, LeaveRequest, PerformanceReview, ReviewCycle, TeamMember, User } from "@/types";
 
 type TeamRow = TeamMember & { attendance?: { present: number; on_leave: number; absent: number } };
 
@@ -22,6 +23,7 @@ function ManagerPageContent() {
   const tab = search.get("tab") || "overview";
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<EmployeeFull | null>(null);
+  const [reportingManager, setReportingManager] = useState<EmployeePublic | null>(null);
   const [team, setTeam] = useState<TeamRow[]>([]);
   const [pending, setPending] = useState<Array<LeaveRequest & { employeeName: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,7 @@ function ManagerPageContent() {
   const [leaveTypes, setLeaveTypes] = useState<Awaited<ReturnType<typeof leaveService.listTypes>>>([]);
   const [leaveBalances, setLeaveBalances] = useState<Awaited<ReturnType<typeof leaveService.getBalance>>>([]);
   const [showApplyLeave, setShowApplyLeave] = useState(false);
+  const [myPayroll, setMyPayroll] = useState<any[]>([]);
 
   const [cycles, setCycles] = useState<ReviewCycle[]>([]);
   const [activeCycle, setActiveCycle] = useState<ReviewCycle | null>(null);
@@ -110,8 +113,19 @@ const load = async () => {
       if (!me.employee_id) throw new Error("Manager account is not linked to an employee record.");
       const mine = await employeeService.getMyProfile();
       setProfile(mine);
+
       await loadMyLeaveData(mine.id);
+
+      // Reporting Line comes directly from the organizational hierarchy.
+      // The org snippet is backed by employee.reporting_manager_id.
       const org = await teamService.getOrgSnippet(mine.id);
+
+      if (org.manager) {
+        setReportingManager(org.manager as EmployeePublic);
+      } else {
+        setReportingManager(null);
+      }
+
       const reports = org.direct_reports || [];
 
       const rows = await Promise.all(
@@ -232,8 +246,76 @@ const load = async () => {
             ))}
           </div>
 
+          {tab === "overview" && (
+            <section id="manager-my-salary" className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,.035)]">
+              <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div><h3 className="text-sm font-bold">My Salary</h3><p className="mt-1 text-[10px] text-slate-400">Your latest payroll information. Only your own salary is shown here.</p></div>
+                <button onClick={() => router.push("/payroll")} className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-[10px] font-bold text-blue-700 hover:bg-blue-100">View full payroll <ArrowUpRight size={13} /></button>
+              </div>
+              {myPayroll.length > 0 ? (
+                <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5">
+                  {[["Basic Salary", myPayroll[0]?.basic_pay], ["Allowances", myPayroll[0]?.allowances], ["Deductions", myPayroll[0]?.deductions], ["Net Salary", myPayroll[0]?.net_pay], ["Status", myPayroll[0]?.status || "—"]].map(([label, value]) => (
+                    <div key={label as string} className="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+                      <p className="text-[10px] font-semibold text-slate-400">{label}</p>
+                      <p className="mt-2 truncate text-lg font-bold tracking-tight text-slate-900">{label === "Status" ? String(value).replace("_", " ") : value == null ? "—" : "₹" + Number(value).toLocaleString("en-IN")}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : <div className="px-5 py-8 text-center"><p className="text-xs font-semibold text-slate-600">No salary record available yet.</p><p className="mt-1 text-[10px] text-slate-400">Once HR creates your payroll record, your latest salary will appear here.</p></div>}
+            </section>
+          )}
+
           {(tab === "overview" || tab === "approvals") && (
-            <div className="mt-5 grid gap-5 lg:grid-cols-[1.35fr_.9fr]">
+            <>
+              <section className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,.035)]">
+                <div className="border-b border-slate-100 px-5 py-4">
+                  <h3 className="text-sm font-bold">Reporting Line</h3>
+                  <p className="mt-1 text-[10px] text-slate-400">
+                    Your manager / reporting head from the organizational hierarchy.
+                  </p>
+                </div>
+
+                {reportingManager ? (
+                  <div className="flex items-center gap-4 px-5 py-5">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-600">
+                      {reportingManager.full_name?.[0] || "M"}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-slate-900">
+                        {reportingManager.full_name}
+                      </p>
+
+                      <p className="mt-1 text-[10px] font-medium text-slate-500">
+                        {reportingManager.designation || "Manager"}
+                        {reportingManager.department
+                          ? ` · ${reportingManager.department}`
+                          : ""}
+                      </p>
+
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-600">
+                          Employee ID: {reportingManager.employee_id || "—"}
+                        </span>
+
+                        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-semibold text-blue-700">
+                          {reportingManager.official_email}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className="hidden rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-bold text-emerald-700 sm:inline-flex">
+                      Reporting Head
+                    </span>
+                  </div>
+                ) : (
+                  <div className="px-5 py-8 text-center text-xs text-slate-400">
+                    No reporting manager assigned.
+                  </div>
+                )}
+              </section>
+
+              <div className="mt-5 grid gap-5 lg:grid-cols-[1.35fr_.9fr]">
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,.035)]">
                 <div className="border-b border-slate-100 px-5 py-4">
                   <h3 className="text-sm font-bold">Pending approvals</h3>
@@ -271,6 +353,7 @@ const load = async () => {
                 )) : <div className="px-5 py-12 text-center text-xs text-slate-400">No direct reports found.</div>}
               </section>
             </div>
+            </>
           )}
 
           {tab === "team" && (

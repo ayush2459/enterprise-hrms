@@ -21,7 +21,7 @@ from app.models.user import User
 
 async def main():
     email = os.getenv("ADMIN_EMAIL", "").strip()
-    password = os.getenv("ADMIN_PASSWORD", "")
+    password = os.getenv("ADMIN_PASSWORD", "Test@1234")
 
     if not email:
         print("ADMIN_EMAIL is not set. Skipping admin creation.")

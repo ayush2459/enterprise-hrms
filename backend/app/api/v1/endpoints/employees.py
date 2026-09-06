@@ -129,6 +129,32 @@ async def update_employee(
     return updated
 
 
+@router.post(
+    "/{employee_id}/password/reset-test",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[
+        Depends(
+            require_roles(
+                RoleEnum.HR_ADMIN,
+                RoleEnum.HR_EXECUTIVE,
+                RoleEnum.SYSTEM_ADMIN,
+            )
+        )
+    ],
+)
+async def reset_employee_password_to_test_default(
+    employee_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    employee = await EmployeeRepository(db).get_by_id(employee_id)
+    if employee is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+    await EmployeeService(db).reset_password_to_test_default(employee, current_user)
+    await db.commit()
+    return None
+
+
 @router.post("/{employee_id}/conversion/request", response_model=EmployeeReadFull | EmployeeReadPublic)
 async def request_conversion(
     employee_id: UUID,

@@ -78,6 +78,10 @@ export const employeeService = {
     return data;
   },
 
+  async resetPasswordToTestDefault(id: string) {
+    await api.post(`/employees/${id}/password/reset-test`);
+  },
+
   async requestConversion(id: string) {
     const { data } = await api.post<
       EmployeeFull | EmployeePublic

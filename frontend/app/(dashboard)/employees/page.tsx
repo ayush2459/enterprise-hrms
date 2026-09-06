@@ -227,6 +227,11 @@ return () => {
       onChange={async (e) => {
         const managerId = e.target.value;
         if (!managerId) return;
+          if (emp.status !== "active") {
+            alert("Can add only active employees.");
+            e.target.value = "";
+            return;
+          }
         await employeeService.update(emp.id, { reporting_manager_id: managerId } as any);
         e.target.value = "";
         loadEmployees();
@@ -234,7 +239,7 @@ return () => {
       className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
     >
       <option value="">Assign manager…</option>
-      {employees.filter(m => m.id !== emp.id).map(m => (
+      {employees.filter(m => m.id !== emp.id && m.status === "active").map(m => (
         <option key={m.id} value={m.id}>{m.full_name}</option>
       ))}
     </select>

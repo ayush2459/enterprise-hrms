@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { X, Info, CheckCircle2 } from "lucide-react";
+import { api } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { leaveService } from "@/services/leave.service";
@@ -47,6 +48,7 @@ export function ApplyLeaveModal({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
+  const [documentFile, setDocumentFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,32 +111,79 @@ export function ApplyLeaveModal({
       return;
     }
 
+    if (selectedLeaveType.requires_document && !documentFile) {
+      setError("Please upload the supporting document required for this leave.");
+      return;
+    }
+
     if (
       selectedLeaveType.requires_reason &&
       !reason.trim()
     ) {
-      setError("A reason is required for this leave type.");
+      setError("Please enter a reason for this leave.");
       return;
     }
 
     setLoading(true);
 
     try {
+      let leaveDocumentId: string | undefined;
+
+      if (selectedLeaveType.requires_document && documentFile) {
+        const formData = new FormData();
+        formData.append("document_type", "other");
+        formData.append("file", documentFile);
+
+        // Use the authenticated API client. It attaches the JWT
+        // from sessionStorage and routes through /api/backend.
+        const { data: document } = await api.post(
+          `/documents/employee/${employeeId}`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        leaveDocumentId = document.id;
+      }
+
       await leaveService.apply(
         employeeId,
         leaveTypeId,
         startDate,
         endDate,
-        reason
+        reason,
+        leaveDocumentId
       );
 
       onApplied();
       onClose();
     } catch (err: any) {
-      setError(
-        err?.response?.data?.detail ??
-          "Could not submit leave request."
-      );
+      const detail = err?.response?.data?.detail;
+
+      let message = "Could not submit leave request.";
+
+      if (typeof detail === "string") {
+        message = detail;
+      } else if (Array.isArray(detail)) {
+        message =
+          detail
+            .map((item: any) => {
+              if (typeof item === "string") return item;
+              if (item?.msg) return String(item.msg);
+              return null;
+            })
+            .filter(Boolean)
+            .join(", ") || message;
+      } else if (detail && typeof detail === "object" && detail.msg) {
+        message = String(detail.msg);
+      } else if (typeof err?.message === "string" && err.message) {
+        message = err.message;
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -279,6 +328,30 @@ export function ApplyLeaveModal({
             <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
               <CheckCircle2 size={14} />
               {requestedDays} day{requestedDays === 1 ? "" : "s"} requested
+            </div>
+          )}
+
+          {selectedLeaveType?.requires_document && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="leave_document"
+                className="text-sm font-medium text-brand-dark"
+              >
+                Supporting Document (required)
+              </label>
+              <input
+                id="leave_document"
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                onChange={(e) =>
+                  setDocumentFile(e.target.files?.[0] ?? null)
+                }
+                required
+                className="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
+              />
+              <p className="text-[10px] text-gray-400">
+                Upload the document supporting this leave request.
+              </p>
             </div>
           )}
 

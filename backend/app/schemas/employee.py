@@ -25,6 +25,7 @@ class EmployeeCreateRequest(EmployeeBase):
     identity) and Employee (HR profile) together in one call."""
     official_email: EmailStr
     employee_id: str | None = None
+    role: RoleEnum = RoleEnum.EMPLOYEE
 
 
 class EmployeeCreateResponse(BaseModel):
@@ -56,6 +57,7 @@ class EmployeeStats(BaseModel):
 
 class EmployeeUpdate(BaseModel):
     full_name: str | None = None
+    employee_id: str | None = None
     department: str | None = None
     designation: str | None = None
     employment_type: EmploymentType | None = None

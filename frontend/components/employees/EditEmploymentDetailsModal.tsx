@@ -26,6 +26,9 @@ export function EditEmploymentDetailsModal({
   onClose: () => void;
   onSaved: (updated: EmployeeFull | EmployeePublic) => void;
 }) {
+  const [employeeIdNumber, setEmployeeIdNumber] = useState(
+    (existing as any).employee_id ?? ""
+  );
   const [department, setDepartment] = useState(existing.department ?? "");
   const [designation, setDesignation] = useState(existing.designation ?? "");
   const [employmentType, setEmploymentType] = useState<"full_time" | "intern" | "contract">(
@@ -42,6 +45,7 @@ export function EditEmploymentDetailsModal({
   const [managers, setManagers] = useState<EmployeePublic[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   useEffect(() => {
     // Populate the Reporting Manager dropdown from real employees — anyone
@@ -49,23 +53,49 @@ export function EditEmploymentDetailsModal({
     // role changed since), so the dropdown never shows a blank/broken value.
     employeeService.list(0, 1000, true).then((all) => {
       setManagers(
-        all.filter(
-          (e) =>
-            e.role === "reporting_manager" ||
-            e.id === reportingManagerId ||
-            e.id !== employeeId
-        )
-      );
+          all.filter(
+            (e) =>
+              e.status === "active" &&
+              e.id !== employeeId &&
+              (
+                e.role === "reporting_manager" ||
+                e.role === "hr_admin" ||
+                e.role === "system_admin"
+              )
+          )
+        );
     }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const resetPasswordToTestDefault = async () => {
+    setError(null);
+    setResettingPassword(true);
+    try {
+      await employeeService.resetPasswordToTestDefault(employeeId);
+    } catch (err: any) {
+      setError(err?.response?.data?.detail ?? "Could not reset the password.");
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (
+      existing.status !== "active" &&
+      (role === "employee" || role === "reporting_manager")
+    ) {
+      setError("Can add only active employees.");
+      return;
+    }
+
     setLoading(true);
     try {
       const updated = await employeeService.update(employeeId, {
+        employee_id: employeeIdNumber.trim() || null,
         department: department || null,
         designation: designation || null,
         employment_type: employmentType,
@@ -99,6 +129,13 @@ export function EditEmploymentDetailsModal({
               {(existing as any).official_email ?? "—"}
             </p>
           </div>
+          <Input
+            id="employee_id"
+            label="Employee Number / Employee ID"
+            value={employeeIdNumber}
+            onChange={(e) => setEmployeeIdNumber(e.target.value)}
+            placeholder="e.g. EMP001"
+          />
           <Input
             id="department"
             label="Department"
@@ -182,6 +219,21 @@ export function EditEmploymentDetailsModal({
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
+
+          <div className="rounded-lg border border-amber-100 bg-amber-50 p-3">
+            <div className="text-xs font-semibold text-amber-900">Login password</div>
+            <p className="mt-1 text-[11px] text-amber-700">
+              Reset to the local/test default: <span className="font-mono font-semibold">Test@1234</span>
+            </p>
+            <button
+              type="button"
+              onClick={resetPasswordToTestDefault}
+              disabled={resettingPassword}
+              className="mt-2 rounded-md border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+            >
+              {resettingPassword ? "Resetting..." : "Reset to Test@1234"}
+            </button>
+          </div>
 
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>

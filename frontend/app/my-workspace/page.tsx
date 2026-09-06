@@ -57,6 +57,8 @@ function MyWorkspacePageContent() {
       setBalances(b);
       setLeaves(l);
       setTypes(t);
+      setLeaveTypes(t);
+      setLeaveBalances(b);
       setPayroll(p);
       setAttendance(a);
       setOrg(o);

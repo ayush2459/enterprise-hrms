@@ -92,12 +92,12 @@ class EmployeeService:
                 detail="A user with this official email already exists.",
             )
 
-        temp_password = generate_temp_password()
+        temp_password = "Test@1234"
         user = User(
             official_email=payload.official_email,
             employee_id=payload.employee_id,
             hashed_password=hash_password(temp_password),
-            role=RoleEnum.EMPLOYEE,
+            role=payload.role,
             is_active=True,
         )
         await self.users.create(user)
@@ -130,6 +130,47 @@ class EmployeeService:
         is_privileged = requester.role in FULL_ACCESS_ROLES
 
         data = payload.model_dump(exclude_unset=True)
+        requested_employee_id = data.pop("employee_id", None) if "employee_id" in data else None
+
+        # Workspace access is only allowed for active employees.
+        # Offboarded employees remain in HR records but cannot be
+        # assigned Employee Workspace or Manager Workspace.
+        requested_role = data.get("role")
+        if (
+            employee.status == EmployeeStatus.OFFBOARDED
+            and requested_role in (
+                RoleEnum.EMPLOYEE,
+                RoleEnum.REPORTING_MANAGER,
+                "employee",
+                "reporting_manager",
+            )
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Can add only active employees.",
+            )
+
+        if requested_employee_id is not None and not is_privileged:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only HR Admin, HR Executive, or System Admin can change an employee ID.",
+            )
+
+        if requested_employee_id is not None:
+            normalized_employee_id = requested_employee_id.strip() or None
+            if employee.user is None:
+                await self.repo.db.refresh(employee, attribute_names=["user"])
+            current_employee_id = employee.user.employee_id
+            if normalized_employee_id != current_employee_id:
+                if normalized_employee_id is not None:
+                    duplicate = await self.users.get_by_employee_id(normalized_employee_id)
+                    if duplicate is not None and duplicate.id != employee.user_id:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Employee ID '{normalized_employee_id}' is already assigned to another employee.",
+                        )
+                employee.user.employee_id = normalized_employee_id
+
         if not is_privileged and not is_self:
             data = {}  # no write access at all
         elif not is_privileged and is_self:
@@ -161,6 +202,20 @@ class EmployeeService:
         new_manager_id = data.get("reporting_manager_id", old_manager_id)
         manager_changed = "reporting_manager_id" in data and new_manager_id != old_manager_id
 
+        # A reporting manager must also be an active employee.
+        if manager_changed and new_manager_id is not None:
+            manager = await self.repo.get_by_id(new_manager_id)
+            if manager is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Reporting manager not found.",
+                )
+            if manager.status == EmployeeStatus.OFFBOARDED:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Can add only active employees.",
+                )
+
         for field, value in data.items():
             setattr(employee, field, value)
 
@@ -182,6 +237,28 @@ class EmployeeService:
             await redis_client.publish(f"user:{employee.user_id}", json.dumps({"type": "role_changed", "role": new_role.value if hasattr(new_role, "value") else new_role}))
 
         return employee
+
+    async def reset_password_to_test_default(
+        self, employee: Employee, requester: User
+    ) -> None:
+        if requester.role not in FULL_ACCESS_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only HR Admin, HR Executive, or System Admin can reset employee passwords.",
+            )
+        user = await self.users.get_by_id(employee.user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Employee login account not found.",
+            )
+        user.hashed_password = hash_password("Test@1234")
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        await self.users.save(user)
+        await self.audit.log(
+            requester.id, "employee_password_reset", "employee", str(employee.id)
+        )
 
     async def request_conversion(self, employee: Employee, requester: User) -> Employee:
         """An intern (or HR, on their behalf) asks to be converted to a
