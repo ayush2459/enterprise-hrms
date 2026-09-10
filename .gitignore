@@ -25,3 +25,12 @@ docker/postgres/data/
 frontend/tsconfig.tsbuildinfo
 .vercel
 .env*
+backups/
+frontend.backup-functionality-ui-*/
+# Catch-all for local backup snapshots (any naming convention)
+*.before-*/
+*-backup-*/
+*backup*/
+node_modules/
+**/node_modules/
+*.backup-*

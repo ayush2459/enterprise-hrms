@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Upload, Download, Check, X as XIcon } from "lucide-react";
 import { Topbar } from "@/components/layout/Topbar";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loader } from "@/components/common/Loader";
@@ -33,11 +34,37 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function DocumentsPage() {
+  const { query: pageSearchQuery } = usePageSearch();
   const { user } = useAuthStore();
   const isHR = !!user && HR_ROLES.includes(user.role);
 
   const [employees, setEmployees] = useState<EmployeePublic[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  // page-search employee resolver
+  useEffect(() => {
+    const q = pageSearchQuery.trim().toLowerCase();
+
+    if (!q) return;
+
+    const match = employees.find((employee) => {
+      const haystack = [
+        employee.full_name,
+        employee.department,
+        employee.designation,
+        employee.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(q);
+    });
+
+    if (match && match.id !== selectedEmployeeId) {
+      setSelectedEmployeeId(match.id);
+    }
+  }, [pageSearchQuery, employees, selectedEmployeeId]);
+
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);

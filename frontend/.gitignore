@@ -1,0 +1,9 @@
+frontend.backup-functionality-ui-*/
+node_modules/
+node_modules/
+*backup*/
+.search-backups-*/
+.full-keka-*/
+.hrhub-*/
+.keka-*/
+.projects-upgrade-backup-*/

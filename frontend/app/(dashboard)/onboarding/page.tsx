@@ -8,15 +8,27 @@ import { Button } from "@/components/ui/Button";
 import { Loader } from "@/components/common/Loader";
 import { onboardingService } from "@/services/onboarding.service";
 import type { OnboardingStatus } from "@/types";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 
 function ChecklistGroup({ label, items }: { label:string; items:{label:string;complete:boolean}[] }) { return <div><p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">{label}</p><ul className="space-y-2">{items.map(item=><li key={item.label} className="flex items-center gap-2 text-xs">{item.complete?<CheckCircle2 size={15} className="text-green-600"/>:<Circle size={15} className="text-gray-300"/>}<span className={item.complete?"text-gray-800":"text-gray-500"}>{item.label}</span></li>)}</ul></div>; }
 
 export default function OnboardingPage(){
+  const { query: pageSearchQuery } = usePageSearch();
  const [rows,setRows]=useState<OnboardingStatus[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState<string|null>(null),[filter,setFilter]=useState("all");
  const load=()=>{setLoading(true);onboardingService.list().then(setRows).catch(()=>setError("Could not load onboarding data. This view is HR-only.")).finally(()=>setLoading(false));};
  useEffect(()=>{load();},[]);
  const enriched=useMemo(()=>rows.map(r=>{const all=[...r.documents,...r.bgv];const done=all.filter(x=>x.complete).length;return {...r,progress:all.length?Math.round(done/all.length*100):0,pending:all.filter(x=>!x.complete).length};}),[rows]);
- const filtered=enriched.filter(r=>filter==="all"||(filter==="complete"&&r.progress===100)||(filter==="pending"&&r.progress<100));
+ const searchFiltered = enriched.filter((r) => {
+    const q = pageSearchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return [r.full_name, r.date_of_joining]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(q);
+  });
+
+  const filtered=searchFiltered.filter(r=>filter==="all"||(filter==="complete"&&r.progress===100)||(filter==="pending"&&r.progress<100));
  const complete=enriched.filter(r=>r.progress===100).length,pending=enriched.filter(r=>r.progress<100).length,avg=enriched.length?Math.round(enriched.reduce((a,r)=>a+r.progress,0)/enriched.length):0;
  const handleComplete=async(id:string)=>{try{await onboardingService.markComplete(id);load();}catch{setError("Could not mark onboarding complete.");}};
  return <><Topbar title="Onboarding" subtitle="New-hire progress, checklists & pending actions"/><div className="space-y-6 p-8">

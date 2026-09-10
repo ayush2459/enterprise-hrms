@@ -9,6 +9,7 @@ import { employeeService } from "@/services/employee.service";
 import { bgvService } from "@/services/bgv.service";
 import { useAuthStore } from "@/store/auth.store";
 import type { BGVCheck, BGVCheckType, EmployeePublic } from "@/types";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 
 const HR_ROLES = ["hr_admin", "hr_executive", "system_admin"];
 const ALL_CHECK_TYPES: BGVCheckType[] = ["education", "employment", "address", "criminal", "reference"];
@@ -31,6 +32,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function BackgroundCheckPage() {
+  const { query: pageSearchQuery } = usePageSearch();
   const { user } = useAuthStore();
   const isHR = !!user && HR_ROLES.includes(user.role);
 

@@ -13,6 +13,7 @@ import {
   Menu,
 } from "lucide-react";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 
 interface TopbarProps {
   title?: string;
@@ -20,6 +21,7 @@ interface TopbarProps {
 }
 
 export function Topbar({ title, subtitle }: TopbarProps) {
+  const { query, setQuery } = usePageSearch();
   const router = useRouter();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -44,6 +46,12 @@ export function Topbar({ title, subtitle }: TopbarProps) {
   const goToSettings = () => {
     setProfileOpen(false);
     router.push("/settings");
+  };
+
+  const goTo = (href: string) => {
+    setProfileOpen(false);
+    setNotificationsOpen(false);
+    router.push(href);
   };
 
   const goToProfile = () => {
@@ -74,7 +82,10 @@ export function Topbar({ title, subtitle }: TopbarProps) {
       <button
         type="button"
         aria-label="Search"
-        onClick={() => setMobileSearchOpen((value) => !value)}
+        onClick={() => {
+          setMobileSearchOpen((value) => !value);
+          window.dispatchEvent(new CustomEvent("hrms:focus-global-search"));
+        }}
         className="ml-2 flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 md:hidden"
       >
         <span className="text-lg">{mobileSearchOpen ? "×" : "⌕"}</span>
@@ -85,7 +96,7 @@ export function Topbar({ title, subtitle }: TopbarProps) {
           type="button"
           aria-label="Help"
           title="Help & Support"
-          onClick={() => window.open("mailto:support@enterprise-hrms.local?subject=HR Portal Support", "_self")}
+          onClick={() => router.push("/settings")}
           className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800"
         >
           <HelpCircle size={18} />
