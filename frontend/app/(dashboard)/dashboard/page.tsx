@@ -411,6 +411,12 @@ export default function DashboardPage() {
                 icon: CalendarDays,
               },
               {
+                title: "Expenses & Travel",
+                description: "Review claims & travel requests",
+                href: "/hr-expense-travel",
+                icon: WalletCards,
+              },
+              {
                 title: "Payroll",
                 description: "Manage salary & payroll",
                 href: "/payroll",

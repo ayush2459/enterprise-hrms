@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuthStore } from "@/store/auth.store";
 import {
   LayoutDashboard,
   Users,
@@ -23,7 +22,12 @@ import {
   ClipboardCheck,
   Receipt,} from "lucide-react";
 
-const primaryBase = [
+const primary = [
+  {
+    label: "Expenses & Travel",
+    href: "/expense-travel",
+    icon: Receipt,
+  },
   {
     label: "Dashboard",
     href: "/dashboard",
@@ -104,23 +108,6 @@ const manage = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuthStore();
-
-  const primary = [
-    {
-      label: "Expenses & Travel",
-      href:
-        user?.role === "reporting_manager"
-          ? "/manager-expense-travel"
-          : user?.role === "hr_admin" ||
-              user?.role === "hr_executive" ||
-              user?.role === "system_admin"
-            ? "/hr-expense-travel"
-            : "/expense-travel",
-      icon: Receipt,
-    },
-    ...primaryBase,
-  ];
 
   const renderItem = (
     item: {

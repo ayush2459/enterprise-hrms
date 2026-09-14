@@ -44,7 +44,17 @@ export default function DashboardLayout({
     // employee somehow lands here (stale bookmark, typed URL), send them
     // to their own workspace instead of showing company-wide HR data.
     if (user && !HR_ROLES.includes(user.role)) {
-      router.replace(user.role === "reporting_manager" ? "/manager" : "/my-workspace");
+      if (user.role === "reporting_manager") {
+        router.replace("/manager");
+      } else if (
+        user.role === "hr_admin" ||
+        user.role === "hr_executive" ||
+        user.role === "system_admin"
+      ) {
+        router.replace("/dashboard");
+      } else {
+        router.replace("/my-workspace");
+      }
     }
   }, [user, router]);
 

@@ -51,3 +51,9 @@ __all__ = [
 ]
 
 from app.models.project import EmployeeProject
+
+from app.models.expense import Expense
+from app.models.travel_request import TravelRequest
+from app.models.expense_document import ExpenseDocument
+from app.models.travel_document import TravelDocument
+from app.models.expense_approval_history import ExpenseApprovalHistory
