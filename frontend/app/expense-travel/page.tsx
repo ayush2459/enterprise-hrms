@@ -1,0 +1,746 @@
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+import {
+  Receipt,
+  Plane,
+  Plus,
+  RefreshCw,
+  CheckCircle2,
+  Clock3,
+  AlertCircle,
+  WalletCards,
+} from "lucide-react";
+
+import { WorkspaceShell } from "@/components/workspaces/WorkspaceShell";
+import { documentService } from "@/services/document.service";
+import { employeeService } from "@/services/employee.service";
+import expenseTravelService, {
+  Expense,
+  Travel,
+} from "@/services/expense-travel.service";
+
+type Mode = "expenses" | "travel";
+
+const statusLabel = (s: string) =>
+  s.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+function Status({ value }: { value: string }) {
+  const positive = ["approved", "settled"].includes(value);
+  const danger = ["rejected"].includes(value);
+  const clarification = value === "clarification_required";
+
+  return (
+    <span
+      className={[
+        "inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold",
+        positive
+          ? "bg-emerald-50 text-emerald-700"
+          : danger
+            ? "bg-red-50 text-red-700"
+            : clarification
+              ? "bg-amber-50 text-amber-700"
+              : "bg-blue-50 text-blue-700",
+      ].join(" ")}
+    >
+      {statusLabel(value)}
+    </span>
+  );
+}
+
+export default function ExpenseTravelPage() {
+  const [mode, setMode] = useState<Mode>("expenses");
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [travel, setTravel] = useState<Travel[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showExpense, setShowExpense] = useState(false);
+  const [showTravel, setShowTravel] = useState(false);
+  const [error, setError] = useState("");
+  const [employeeId, setEmployeeId] = useState<string | null>(null);
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const [e, t] = await Promise.all([
+        expenseTravelService.listExpenses(),
+        expenseTravelService.listTravel(),
+      ]);
+      setExpenses(e);
+      setTravel(t);
+    } catch (err) {
+      console.error(err);
+      setError("Unable to load Expenses & Travel.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    employeeService
+      .getMyProfile()
+      .then((profile) => setEmployeeId(profile.id))
+      .catch((err) => console.error("Unable to load employee profile", err));
+
+    load();
+
+    const handler = () => load();
+    window.addEventListener("hrhub:realtime", handler);
+    const timer = setInterval(load, 15000);
+
+    return () => {
+      window.removeEventListener("hrhub:realtime", handler);
+      clearInterval(timer);
+    };
+  }, []);
+
+  return (
+    <WorkspaceShell
+      role="employee"
+      title="Expenses & Travel"
+      subtitle="Manage your expense claims and travel requests"
+      name="Employee"
+    >
+      <div className="space-y-5">
+        <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-brand-dark to-brand p-6 text-white md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[.15em] text-blue-200">
+              Employee Self Service
+            </p>
+            <h1 className="mt-2 text-2xl font-bold">
+              Expenses & Travel
+            </h1>
+            <p className="mt-1 text-sm text-blue-100">
+              Submit claims, travel requests and track approvals in real time.
+            </p>
+          </div>
+
+          <button
+            onClick={load}
+            className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2 text-xs font-semibold hover:bg-white/20"
+          >
+            <RefreshCw size={14} />
+            Refresh
+          </button>
+        </div>
+
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <button
+            onClick={() => setMode("expenses")}
+            className={[
+              "rounded-xl border bg-white p-4 text-left",
+              mode === "expenses"
+                ? "border-blue-300 ring-2 ring-blue-50"
+                : "border-slate-200",
+            ].join(" ")}
+          >
+            <Receipt className="text-blue-600" size={20} />
+            <p className="mt-3 text-sm font-bold">Expenses</p>
+            <p className="mt-1 text-[10px] text-slate-400">
+              {expenses.length} requests
+            </p>
+          </button>
+
+          <button
+            onClick={() => setMode("travel")}
+            className={[
+              "rounded-xl border bg-white p-4 text-left",
+              mode === "travel"
+                ? "border-blue-300 ring-2 ring-blue-50"
+                : "border-slate-200",
+            ].join(" ")}
+          >
+            <Plane className="text-violet-600" size={20} />
+            <p className="mt-3 text-sm font-bold">Travel</p>
+            <p className="mt-1 text-[10px] text-slate-400">
+              {travel.length} requests
+            </p>
+          </button>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <Clock3 className="text-amber-600" size={20} />
+            <p className="mt-3 text-sm font-bold">Pending</p>
+            <p className="mt-1 text-[10px] text-slate-400">
+              {
+                [...expenses, ...travel].filter(
+                  (x) =>
+                    x.status === "pending_manager" ||
+                    x.status === "pending_hr",
+                ).length
+              }{" "}
+              awaiting action
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <WalletCards className="text-emerald-600" size={20} />
+            <p className="mt-3 text-sm font-bold">Settled</p>
+            <p className="mt-1 text-[10px] text-slate-400">
+              {
+                [...expenses, ...travel].filter(
+                  (x) => x.status === "settled",
+                ).length
+              }{" "}
+              completed
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={() =>
+              mode === "expenses"
+                ? setShowExpense(true)
+                : setShowTravel(true)
+            }
+            className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:opacity-90"
+          >
+            <Plus size={15} />
+            {mode === "expenses"
+              ? "Add Expense"
+              : "New Travel Request"}
+          </button>
+        </div>
+
+        {mode === "expenses" ? (
+          <ExpenseList
+            rows={expenses}
+            loading={loading}
+            onRefresh={load}
+          />
+        ) : (
+          <TravelList
+            rows={travel}
+            loading={loading}
+            onRefresh={load}
+          />
+        )}
+
+        {showExpense && (
+          <ExpenseModal
+            employeeId={employeeId}
+            onClose={() => setShowExpense(false)}
+            onCreated={() => {
+              setShowExpense(false);
+              load();
+            }}
+          />
+        )}
+
+        {showTravel && (
+          <TravelModal
+            employeeId={employeeId}
+            onClose={() => setShowTravel(false)}
+            onCreated={() => {
+              setShowTravel(false);
+              load();
+            }}
+          />
+        )}
+      </div>
+    </WorkspaceShell>
+  );
+}
+
+function ExpenseList({
+  rows,
+  loading,
+  onRefresh,
+}: {
+  rows: Expense[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="border-b border-slate-100 px-5 py-4">
+        <h2 className="text-sm font-bold text-slate-900">
+          My Expense Claims
+        </h2>
+      </div>
+
+      {loading ? (
+        <div className="p-8 text-center text-xs text-slate-400">
+          Loading...
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="p-10 text-center">
+          <Receipt className="mx-auto text-slate-300" size={32} />
+          <p className="mt-3 text-sm font-semibold text-slate-600">
+            No expense claims yet
+          </p>
+        </div>
+      ) : (
+        <div className="divide-y divide-slate-100">
+          {rows.map((row) => (
+            <div
+              key={row.id}
+              className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between"
+            >
+              <div>
+                <p className="text-sm font-bold text-slate-800">
+                  {row.category}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  {row.expense_date} · {row.description}
+                </p>
+                {row.manager_comment && (
+                  <p className="mt-2 text-[11px] text-amber-700">
+                    Manager: {row.manager_comment}
+                  </p>
+                )}
+                {row.hr_comment && (
+                  <p className="mt-1 text-[11px] text-amber-700">
+                    HR: {row.hr_comment}
+                  </p>
+                )}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Status value={row.status} />
+                  {row.document_ids.length > 0 && (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold text-slate-500">
+                      {row.document_ids.length} document
+                      {row.document_ids.length > 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-left md:text-right">
+                <p className="text-lg font-bold text-slate-900">
+                  {row.currency} {Number(row.amount).toLocaleString("en-IN")}
+                </p>
+                {row.status === "clarification_required" && (
+                  <button
+                    onClick={async () => {
+                      const comment = window.prompt(
+                        "Add clarification / response:",
+                      );
+                      if (!comment) return;
+                      await expenseTravelService.resubmitExpense(
+                        row.id,
+                        comment,
+                      );
+                      onRefresh();
+                    }}
+                    className="mt-2 inline-flex items-center gap-1 rounded-lg bg-amber-100 px-3 py-1.5 text-[10px] font-bold text-amber-800"
+                  >
+                    <AlertCircle size={12} />
+                    Respond & Resubmit
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TravelList({
+  rows,
+  loading,
+  onRefresh,
+}: {
+  rows: Travel[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="border-b border-slate-100 px-5 py-4">
+        <h2 className="text-sm font-bold text-slate-900">
+          My Travel Requests
+        </h2>
+      </div>
+
+      {loading ? (
+        <div className="p-8 text-center text-xs text-slate-400">
+          Loading...
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="p-10 text-center">
+          <Plane className="mx-auto text-slate-300" size={32} />
+          <p className="mt-3 text-sm font-semibold text-slate-600">
+            No travel requests yet
+          </p>
+        </div>
+      ) : (
+        <div className="divide-y divide-slate-100">
+          {rows.map((row) => (
+            <div
+              key={row.id}
+              className="flex flex-col gap-3 px-5 py-4 md:flex-row md:items-center md:justify-between"
+            >
+              <div>
+                <p className="text-sm font-bold text-slate-800">
+                  {row.destination}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  {row.start_date} → {row.end_date} · {row.purpose}
+                </p>
+                {row.manager_comment && (
+                  <p className="mt-2 text-[11px] text-amber-700">
+                    Manager: {row.manager_comment}
+                  </p>
+                )}
+                {row.hr_comment && (
+                  <p className="mt-1 text-[11px] text-amber-700">
+                    HR: {row.hr_comment}
+                  </p>
+                )}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Status value={row.status} />
+                  {row.advance_required && (
+                    <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-semibold text-violet-700">
+                      Advance: {row.currency}{" "}
+                      {Number(row.advance_amount || 0).toLocaleString("en-IN")}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-lg font-bold text-slate-900">
+                {row.currency}{" "}
+                {Number(row.estimated_cost).toLocaleString("en-IN")}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ExpenseModal({
+  employeeId,
+  onClose,
+  onCreated,
+}: {
+  employeeId: string | null;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [category, setCategory] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
+  const [description, setDescription] = useState("");
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      setSaving(true);
+
+      if (!employeeId) {
+        throw new Error("Unable to determine employee profile.");
+      }
+
+      if (!receipt) {
+        throw new Error("Please attach the expense receipt.");
+      }
+
+      const uploaded = await documentService.upload(
+        employeeId,
+        "expense_receipt",
+        receipt,
+      );
+
+      await expenseTravelService.createExpense({
+        category,
+        amount: Number(amount),
+        currency: "INR",
+        expense_date: date,
+        description,
+        document_ids: [uploaded.id],
+      });
+
+      onCreated();
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.detail || err?.message || "Unable to submit expense.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal title="Add Expense" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-4">
+        <Input label="Category" value={category} onChange={setCategory} placeholder="Travel, Food, Internet..." />
+        <Input label="Amount (INR)" type="number" value={amount} onChange={setAmount} />
+        <Input label="Expense Date" type="date" value={date} onChange={setDate} />
+        <TextArea label="Description" value={description} onChange={setDescription} />
+        <div className="space-y-2">
+          <label className="block text-xs font-semibold text-slate-700">
+            Supporting Receipt *
+          </label>
+
+          <input
+            type="file"
+            required
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
+            onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
+            className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+          />
+
+          {receipt && (
+            <p className="text-[11px] text-slate-500">
+              Selected: {receipt.name}
+            </p>
+          )}
+
+          <p className="text-[10px] text-slate-400">
+            The receipt will be available to your manager and HR for review.
+          </p>
+        </div>
+        <SubmitButtons saving={saving} onClose={onClose} />
+      </form>
+    </Modal>
+  );
+}
+
+function TravelModal({
+  employeeId,
+  onClose,
+  onCreated,
+}: {
+  employeeId: string | null;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [destination, setDestination] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+  const [cost, setCost] = useState("");
+  const [transport, setTransport] = useState("");
+  const [accommodation, setAccommodation] = useState("");
+  const [advance, setAdvance] = useState(false);
+  const [advanceAmount, setAdvanceAmount] = useState("");
+  const [notes, setNotes] = useState("");
+  const [travelDocument, setTravelDocument] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      setSaving(true);
+
+      if (!employeeId) {
+        throw new Error("Unable to determine employee profile.");
+      }
+
+      if (!travelDocument) {
+        throw new Error("Please attach a supporting travel document.");
+      }
+
+      const uploaded = await documentService.upload(
+        employeeId,
+        "travel_document",
+        travelDocument,
+      );
+
+      await expenseTravelService.createTravel({
+
+        destination,
+        purpose,
+        start_date: start,
+        end_date: end,
+        estimated_cost: Number(cost),
+        currency: "INR",
+        transport,
+        accommodation,
+        advance_required: advance,
+        advance_amount: advance
+          ? Number(advanceAmount)
+          : undefined,
+        notes,
+        document_ids: [uploaded.id],
+      });
+      onCreated();
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.response?.data?.detail || err?.message || "Unable to submit travel request.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal title="New Travel Request" onClose={onClose}>
+      <form onSubmit={submit} className="grid gap-4 md:grid-cols-2">
+        <Input label="Destination" value={destination} onChange={setDestination} />
+        <Input label="Estimated Cost (INR)" type="number" value={cost} onChange={setCost} />
+        <Input label="Start Date" type="date" value={start} onChange={setStart} />
+        <Input label="End Date" type="date" value={end} onChange={setEnd} />
+        <Input label="Transport" value={transport} onChange={setTransport} placeholder="Flight, Train, Cab..." />
+        <Input label="Accommodation" value={accommodation} onChange={setAccommodation} />
+        <div className="md:col-span-2">
+          <TextArea label="Purpose" value={purpose} onChange={setPurpose} />
+        </div>
+        <label className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+          <input
+            type="checkbox"
+            checked={advance}
+            onChange={(e) => setAdvance(e.target.checked)}
+          />
+          Request travel advance
+        </label>
+        <div className="md:col-span-2 space-y-2">
+          <label className="block text-xs font-semibold text-slate-700">
+            Supporting Travel Document *
+          </label>
+
+          <input
+            type="file"
+            required
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
+            onChange={(e) =>
+              setTravelDocument(e.target.files?.[0] ?? null)
+            }
+            className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+          />
+
+          {travelDocument && (
+            <p className="text-[11px] text-slate-500">
+              Selected: {travelDocument.name}
+            </p>
+          )}
+
+          <p className="text-[10px] text-slate-400">
+            Attach a ticket, itinerary, booking confirmation, or other
+            supporting travel document.
+          </p>
+        </div>
+
+        {advance && (
+          <Input
+            label="Advance Amount (INR)"
+            type="number"
+            value={advanceAmount}
+            onChange={setAdvanceAmount}
+          />
+        )}
+        <div className="md:col-span-2">
+          <TextArea label="Notes" value={notes} onChange={setNotes} />
+        </div>
+        <div className="md:col-span-2">
+          <SubmitButtons saving={saving} onClose={onClose} />
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+          <button onClick={onClose} className="text-xl text-slate-400">×</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Input({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (x: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </span>
+      <input
+        required
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none focus:border-blue-400"
+      />
+    </label>
+  );
+}
+
+function TextArea({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (x: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+        {label}
+      </span>
+      <textarea
+        required={label !== "Notes"}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+        className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-xs outline-none focus:border-blue-400"
+      />
+    </label>
+  );
+}
+
+function SubmitButtons({
+  saving,
+  onClose,
+}: {
+  saving: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex justify-end gap-2">
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600"
+      >
+        Cancel
+      </button>
+      <button
+        disabled={saving}
+        className="rounded-lg bg-brand px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+      >
+        {saving ? "Submitting..." : "Submit Request"}
+      </button>
+    </div>
+  );
+}
