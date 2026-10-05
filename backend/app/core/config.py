@@ -1,3 +1,4 @@
+from pathlib import Path
 """
 Centralized application configuration.
 
@@ -35,7 +36,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = 5432
 
     # ---- Redis ----
-    REDIS_URL: str = "redis://redis:6379/0"
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     # ---- CORS ----
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
@@ -45,6 +46,10 @@ class Settings(BaseSettings):
     LOGIN_MAX_FAILED_ATTEMPTS: int = 5
     LOGIN_LOCKOUT_MINUTES: int = 15
     CAPTCHA_AFTER_ATTEMPTS: int = 3
+    # ---- Google OAuth ----
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:3007/api/backend/auth/google/callback"
 
     # ---- Email ----
     SMTP_HOST: str = ""
@@ -54,7 +59,7 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "Enterprise HR Portal <no-reply@example.com>"
 
     # ---- File uploads (Section 5.2: Documents) ----
-    UPLOAD_ROOT: str = "/app/uploads"
+    UPLOAD_ROOT: str = str(Path(__file__).resolve().parents[2] / "uploads")
     MAX_UPLOAD_SIZE_BYTES: int = 10 * 1024 * 1024  # 10 MB, matches Section 7's validation cap
     ALLOWED_UPLOAD_MIME_TYPES: List[str] = [
         "application/pdf",
