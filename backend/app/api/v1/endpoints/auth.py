@@ -137,7 +137,7 @@ async def google_callback(
     )
 
     redirect_url = (
-        "http://localhost:3007/login?"
+        f"{settings.GOOGLE_FRONTEND_URL.rstrip('/')}/login?"
         + urlencode({"google_code": login_code})
     )
 

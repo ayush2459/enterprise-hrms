@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:3007/api/backend/auth/google/callback"
+    GOOGLE_FRONTEND_URL: str = "http://localhost:3007"
 
     # ---- Email ----
     SMTP_HOST: str = ""
