@@ -20,4 +20,11 @@ export const authService = {
     const { data } = await api.post("/auth/refresh", { refresh_token: refreshToken });
     return data;
   },
+
+  async exchangeGoogleCode(googleCode: string) {
+    const { data } = await api.post("/auth/google/exchange", {
+      google_code: googleCode,
+    });
+    return data;
+  },
 };

@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     LOGIN_MAX_FAILED_ATTEMPTS: int = 5
     LOGIN_LOCKOUT_MINUTES: int = 15
     CAPTCHA_AFTER_ATTEMPTS: int = 3
+    # ---- Google OAuth ----
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:3007/api/backend/auth/google/callback"
 
     # ---- Email ----
     SMTP_HOST: str = ""
