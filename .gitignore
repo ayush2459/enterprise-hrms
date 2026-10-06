@@ -34,3 +34,8 @@ frontend.backup-functionality-ui-*/
 node_modules/
 **/node_modules/
 *.backup-*
+sample-data/
+*.sql
+
+# Local uploaded files
+backend/uploads/

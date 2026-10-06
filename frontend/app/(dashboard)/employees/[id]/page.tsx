@@ -1,5 +1,14 @@
 "use client";
 
+/*
+ * Employee deletion synchronization.
+ * Uses BroadcastChannel when available and falls back to a DOM event.
+ * This is intentionally client-only and does not replace backend auth.
+ */
+
+
+import PermanentDeleteEmployee from "@/components/employees/PermanentDeleteEmployee";
+
 import { holidayService } from "@/services/holiday.service";
 import { projectService } from "@/services/project.service";
 import { teamService } from "@/services/team.service";
@@ -12,6 +21,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Loader } from "@/components/common/Loader";
 import { EditPersonalDetailsModal } from "@/components/employees/EditPersonalDetailsModal";
+import { EditEmploymentDetailsModal } from "@/components/employees/EditEmploymentDetailsModal";
 import { OffboardEmployeeModal } from "@/components/employees/OffboardEmployeeModal";
 import { AddDependentModal } from "@/components/insurance/AddDependentModal";
 import { employeeService } from "@/services/employee.service";
@@ -129,6 +139,7 @@ export default function EmployeeProfilePage() {
 
   const [employee, setEmployee] = useState<EmployeeFull | EmployeePublic | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditEmploymentModal, setShowEditEmploymentModal] = useState(false);
   const [showOffboardModal, setShowOffboardModal] = useState(false);
   const [reactivateLoading, setReactivateLoading] = useState(false);
   const [reactivateError, setReactivateError] = useState<string | null>(null);
@@ -241,6 +252,18 @@ export default function EmployeeProfilePage() {
       setPayrollSaving(false);
     }
   };
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.type === "manager_assigned" || detail?.type === "team_updated" || detail?.type === "role_changed") {
+        reloadEmployee();
+      }
+    };
+    window.addEventListener("hrhub:realtime", handler);
+    return () => window.removeEventListener("hrhub:realtime", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const reloadEmployee = async () => {
     try {
@@ -418,6 +441,7 @@ export default function EmployeeProfilePage() {
       <>
         <Topbar title="Employee Profile" />
         <div className="p-8">
+
           <Loader label="Loading profile..." />
         </div>
       </>
@@ -482,6 +506,15 @@ export default function EmployeeProfilePage() {
           </div>
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-brand-dark">{employee.full_name}</h1>
+              {isHR && (
+                <div className="mt-4 flex justify-end">
+                  <PermanentDeleteEmployee
+                    employeeId={String(employee.id)}
+                    isHR={isHR}
+                  />
+                </div>
+              )}
+
             <p className="text-sm text-gray-500">
               {employee.designation ?? "—"} · {employee.department ?? "—"}
             </p>
@@ -503,9 +536,23 @@ export default function EmployeeProfilePage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Employment Details */}
-          <SectionCard title="Employment Details">
+          <SectionCard
+            title="Employment Details"
+            action={
+              isHR && (
+                <button
+                  onClick={() => setShowEditEmploymentModal(true)}
+                  className="flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+                >
+                  <Pencil size={12} />
+                  Edit
+                </button>
+              )
+            }
+          >
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Employee ID" value={employee.id.slice(0, 8)} />
+              <Field label="Employee ID" value={employee.employee_id ?? "—"} />
+              <Field label="Official Email" value={(employee as any).official_email ?? "—"} />
               <Field label="Department" value={employee.department} />
               <Field label="Position" value={employee.designation} />
               <Field label="Employment Type" value={employee.employment_type.replace("_", " ")} />
@@ -2095,6 +2142,14 @@ export default function EmployeeProfilePage() {
           employeeId={employeeId}
           existing={full}
           onClose={() => setShowEditModal(false)}
+          onSaved={(updated) => setEmployee(updated)}
+        />
+      )}
+      {showEditEmploymentModal && employee && (
+        <EditEmploymentDetailsModal
+          employeeId={employeeId}
+          existing={employee}
+          onClose={() => setShowEditEmploymentModal(false)}
           onSaved={(updated) => setEmployee(updated)}
         />
       )}

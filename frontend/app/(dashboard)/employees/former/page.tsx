@@ -155,6 +155,7 @@ export default function FormerEmployeesPage() {
               <table className="w-full text-sm">
                 <thead className="bg-surface-muted text-left text-gray-500">
                   <tr>
+                    <th className="px-5 py-3 font-medium">Emp #</th>
                     <th className="px-5 py-3 font-medium">Name</th>
                     <th className="px-5 py-3 font-medium">Department</th>
                     <th className="px-5 py-3 font-medium">Designation</th>
@@ -174,6 +175,9 @@ export default function FormerEmployeesPage() {
                       key={emp.id}
                       className="transition hover:bg-surface-muted"
                     >
+                      <td className="px-5 py-4 font-mono text-xs text-gray-500">
+                        {emp.employee_id ?? "—"}
+                      </td>
                       <td
                         onClick={() =>
                           router.push(`/employees/${emp.id}`)

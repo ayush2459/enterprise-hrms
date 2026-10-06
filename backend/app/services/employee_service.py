@@ -3,6 +3,7 @@ Employee business logic, including the field-level visibility rule from
 Section 3: only HR Admin, HR Executive, and the employee themself see
 sensitive fields (blood group, personal address, emergency contact).
 """
+import json
 from datetime import date
 from uuid import UUID
 
@@ -91,12 +92,12 @@ class EmployeeService:
                 detail="A user with this official email already exists.",
             )
 
-        temp_password = generate_temp_password()
+        temp_password = "Test@1234"
         user = User(
             official_email=payload.official_email,
             employee_id=payload.employee_id,
             hashed_password=hash_password(temp_password),
-            role=RoleEnum.EMPLOYEE,
+            role=payload.role,
             is_active=True,
         )
         await self.users.create(user)
@@ -129,11 +130,52 @@ class EmployeeService:
         is_privileged = requester.role in FULL_ACCESS_ROLES
 
         data = payload.model_dump(exclude_unset=True)
+        requested_employee_id = data.pop("employee_id", None) if "employee_id" in data else None
+
+        # Workspace access is only allowed for active employees.
+        # Offboarded employees remain in HR records but cannot be
+        # assigned Employee Workspace or Manager Workspace.
+        requested_role = data.get("role")
+        if (
+            employee.status == EmployeeStatus.OFFBOARDED
+            and requested_role in (
+                RoleEnum.EMPLOYEE,
+                RoleEnum.REPORTING_MANAGER,
+                "employee",
+                "reporting_manager",
+            )
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Can add only active employees.",
+            )
+
+        if requested_employee_id is not None and not is_privileged:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only HR Admin, HR Executive, or System Admin can change an employee ID.",
+            )
+
+        if requested_employee_id is not None:
+            normalized_employee_id = requested_employee_id.strip() or None
+            if employee.user is None:
+                await self.repo.db.refresh(employee, attribute_names=["user"])
+            current_employee_id = employee.user.employee_id
+            if normalized_employee_id != current_employee_id:
+                if normalized_employee_id is not None:
+                    duplicate = await self.users.get_by_employee_id(normalized_employee_id)
+                    if duplicate is not None and duplicate.id != employee.user_id:
+                        raise HTTPException(
+                            status_code=status.HTTP_409_CONFLICT,
+                            detail=f"Employee ID '{normalized_employee_id}' is already assigned to another employee.",
+                        )
+                employee.user.employee_id = normalized_employee_id
+
         if not is_privileged and not is_self:
             data = {}  # no write access at all
         elif not is_privileged and is_self:
             # Employees may only edit their own contact/banking-type fields,
-            # not org fields like department/designation/manager.
+            # not org fields like department/designation/manager/role.
             allowed = {
                 "personal_address",
                 "emergency_contact",
@@ -146,12 +188,77 @@ class EmployeeService:
             }
             data = {k: v for k, v in data.items() if k in allowed}
 
+        # role lives on the linked User row, not Employee — and even a
+        # privileged requester promoting/demoting someone (e.g. making
+        # them a reporting manager) needs the user relationship loaded.
+        new_role = data.pop("role", None)
+        role_changed = new_role is not None and is_privileged
+        if role_changed:
+            if employee.user is None:
+                await self.repo.db.refresh(employee, attribute_names=["user"])
+            employee.user.role = new_role
+
+        old_manager_id = employee.reporting_manager_id
+        new_manager_id = data.get("reporting_manager_id", old_manager_id)
+        manager_changed = "reporting_manager_id" in data and new_manager_id != old_manager_id
+
+        # A reporting manager must also be an active employee.
+        if manager_changed and new_manager_id is not None:
+            manager = await self.repo.get_by_id(new_manager_id)
+            if manager is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Reporting manager not found.",
+                )
+            if manager.status == EmployeeStatus.OFFBOARDED:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Can add only active employees.",
+                )
+
         for field, value in data.items():
             setattr(employee, field, value)
 
         await self.repo.save(employee)
         await self.audit.log(requester.id, "employee_update", "employee", str(employee.id))
+
+        from app.core.redis import redis_client
+        if manager_changed:
+            await redis_client.publish(f"user:{employee.user_id}", json.dumps({"type": "manager_assigned", "manager_id": str(new_manager_id) if new_manager_id else None}))
+            if new_manager_id:
+                new_mgr = await self.repo.get_by_id(new_manager_id)
+                if new_mgr:
+                    await redis_client.publish(f"user:{new_mgr.user_id}", json.dumps({"type": "team_updated"}))
+            if old_manager_id:
+                old_mgr = await self.repo.get_by_id(old_manager_id)
+                if old_mgr:
+                    await redis_client.publish(f"user:{old_mgr.user_id}", json.dumps({"type": "team_updated"}))
+        if role_changed:
+            await redis_client.publish(f"user:{employee.user_id}", json.dumps({"type": "role_changed", "role": new_role.value if hasattr(new_role, "value") else new_role}))
+
         return employee
+
+    async def reset_password_to_test_default(
+        self, employee: Employee, requester: User
+    ) -> None:
+        if requester.role not in FULL_ACCESS_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only HR Admin, HR Executive, or System Admin can reset employee passwords.",
+            )
+        user = await self.users.get_by_id(employee.user_id)
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Employee login account not found.",
+            )
+        user.hashed_password = hash_password("Test@1234")
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        await self.users.save(user)
+        await self.audit.log(
+            requester.id, "employee_password_reset", "employee", str(employee.id)
+        )
 
     async def request_conversion(self, employee: Employee, requester: User) -> Employee:
         """An intern (or HR, on their behalf) asks to be converted to a
@@ -302,6 +409,101 @@ class EmployeeService:
         )
 
         return employee
+
+
+    async def delete_employee(
+        self,
+        employee: Employee,
+        requester: User,
+    ) -> None:
+        """Permanently remove an employee and their login account.
+
+        This is intentionally different from offboarding:
+        - the Employee row is deleted permanently
+        - the linked User row is deleted permanently
+        - employee-owned DB records are removed through FK cascades
+        - manager references are cleared through ON DELETE SET NULL
+        - uploaded document files are removed explicitly
+        - an employee_deleted realtime event is published
+        """
+
+        if requester.role not in FULL_ACCESS_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Only HR Admin, HR Executive, or System Admin "
+                    "can permanently delete an employee."
+                ),
+            )
+
+        employee_id = employee.id
+        user_id = employee.user_id
+
+        # Remove physical uploaded document files before the DB rows
+        # disappear through ON DELETE CASCADE.
+        from pathlib import Path
+        from app.core.config import settings
+        from app.repositories.document_repository import DocumentRepository
+
+        documents = await DocumentRepository(self.db).list_by_employee(employee_id)
+
+        upload_root = Path(settings.UPLOAD_ROOT)
+
+        for document in documents:
+            try:
+                file_path = Path(document.file_path)
+                if file_path.exists():
+                    file_path.unlink()
+            except OSError:
+                # File cleanup should not prevent the database deletion.
+                pass
+
+        # Capture the employee's manager before deletion for realtime
+        # consumers that may need to refresh that manager's team.
+        manager_id = employee.reporting_manager_id
+
+        # Delete employee first. PostgreSQL cascades employee-owned rows
+        # such as documents, leave requests, attendance, payroll, assets,
+        # insurance and performance records according to their FK rules.
+        await self.repo.delete(employee)
+
+        # Employee.user_id points to users with ON DELETE CASCADE in the
+        # opposite direction, so deleting Employee does NOT remove User.
+        # Explicitly remove the login account.
+        user = await self.users.get_by_id(user_id)
+        if user is not None:
+            await self.db.delete(user)
+            await self.db.flush()
+
+        await self.audit.log(
+            requester.id,
+            "employee_delete_permanent",
+            "employee",
+            str(employee_id),
+        )
+
+        from app.core.redis import redis_client
+
+        await redis_client.publish(
+            "hrhub:realtime",
+            json.dumps({
+                "type": "employee_deleted",
+                "employee_id": str(employee_id),
+                "user_id": str(user_id),
+                "manager_id": str(manager_id) if manager_id else None,
+            }),
+        )
+
+        if manager_id:
+            manager = await self.repo.get_by_id(manager_id)
+            if manager:
+                await redis_client.publish(
+                    f"user:{manager.user_id}",
+                    json.dumps({
+                        "type": "team_updated",
+                        "employee_id": str(employee_id),
+                    }),
+                )
 
     async def reactivate_employee(
         self,

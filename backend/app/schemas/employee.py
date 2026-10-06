@@ -3,7 +3,7 @@ from uuid import UUID
 from datetime import date
 from pydantic import BaseModel, ConfigDict, EmailStr
 
-from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, OffboardReason, SelectionStatus
+from app.models.enums import ConversionStatus, EmployeeStatus, EmploymentType, OffboardReason, RoleEnum, SelectionStatus
 
 
 class EmployeeBase(BaseModel):
@@ -25,6 +25,7 @@ class EmployeeCreateRequest(EmployeeBase):
     identity) and Employee (HR profile) together in one call."""
     official_email: EmailStr
     employee_id: str | None = None
+    role: RoleEnum = RoleEnum.EMPLOYEE
 
 
 class EmployeeCreateResponse(BaseModel):
@@ -56,6 +57,7 @@ class EmployeeStats(BaseModel):
 
 class EmployeeUpdate(BaseModel):
     full_name: str | None = None
+    employee_id: str | None = None
     department: str | None = None
     designation: str | None = None
     employment_type: EmploymentType | None = None
@@ -73,6 +75,7 @@ class EmployeeUpdate(BaseModel):
     bank_name: str | None = None
     pf_number: str | None = None
     status: EmployeeStatus | None = None
+    role: RoleEnum | None = None
 
 
 class EmployeeReadPublic(EmployeeBase):
@@ -80,6 +83,9 @@ class EmployeeReadPublic(EmployeeBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    employee_id: str | None = None
+    official_email: str | None = None
+    role: str | None = None
     gender: str | None = None
     photo_url: str | None = None
     status: EmployeeStatus
@@ -109,6 +115,7 @@ class SeparatedEmployee(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    employee_id: str | None = None
     full_name: str
     designation: str | None = None
     department: str | None = None

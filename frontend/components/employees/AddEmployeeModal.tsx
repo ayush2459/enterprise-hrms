@@ -21,6 +21,7 @@ const EMPTY_FORM: EmployeeCreateInput = {
   employment_type: "full_time",
   date_of_joining: "",
   notice_period_days: undefined,
+  role: "employee",
 };
 
 export function AddEmployeeModal({ onClose, onCreated }: AddEmployeeModalProps) {
@@ -172,6 +173,19 @@ export function AddEmployeeModal({ onClose, onCreated }: AddEmployeeModalProps) 
               value={form.date_of_joining}
               onChange={update("date_of_joining")}
             />
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-brand-dark">Workspace / Role</label>
+              <select
+                id="create_employee_role"
+                value={(form as any).role ?? "employee"}
+                onChange={update("role" as keyof EmployeeCreateInput)}
+                className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+              >
+                <option value="employee">Employee Workspace</option>
+                <option value="reporting_manager">Manager Workspace</option>
+              </select>
+            </div>
+
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 

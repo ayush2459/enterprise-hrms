@@ -13,7 +13,135 @@ import { employeeService } from "@/services/employee.service";
 import { usePageSearch } from "@/components/layout/PageSearchContext";
 import type { EmployeePublic } from "@/types";
 
+
+function EmployeeRealtimeSync({
+  onRefresh,
+}: {
+  onRefresh: () => void;
+}) {
+  useEffect(() => {
+    const refresh = () => {
+      try {
+        onRefresh();
+      } catch {
+        // Realtime synchronization must never crash the page.
+      }
+    };
+
+    const handleEmployeeDeleted = () => {
+      refresh();
+    };
+
+    window.addEventListener(
+      "hrhub:employee_deleted",
+      handleEmployeeDeleted
+    );
+
+    window.addEventListener(
+      "hrhub:employee-directory-refresh",
+      refresh
+    );
+
+    let channel: BroadcastChannel | null = null;
+
+    if (typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel("hrhub-employees");
+
+      channel.addEventListener("message", (event) => {
+        if (event.data?.type === "employee_deleted") {
+          refresh();
+        }
+      });
+    }
+
+    return () => {
+      window.removeEventListener(
+        "hrhub:employee_deleted",
+        handleEmployeeDeleted
+      );
+
+      window.removeEventListener(
+        "hrhub:employee-directory-refresh",
+        refresh
+      );
+
+      channel?.close();
+    };
+  }, [onRefresh]);
+
+  return null;
+}
+
 export default function EmployeesPage() {
+useEffect(() => {
+    let cancelled = false;
+    let channel: BroadcastChannel | null = null;
+
+    const refreshEmployees = async () => {
+      if (cancelled) return;
+
+      try {
+        /*
+         * Reuse the page's existing employee loading mechanism.
+         * Dispatching this event lets the existing loader perform the
+         * authenticated request without duplicating API logic here.
+         */
+        window.dispatchEvent(
+          new CustomEvent("hrhub:employee-directory-refresh")
+        );
+      } catch {
+        // Realtime/polling is supplemental; never break the page.
+      }
+    };
+
+    const handleDeleted = (event: Event) => {
+      const custom = event as CustomEvent;
+      const employeeId =
+        custom.detail?.employeeId ??
+        custom.detail?.id ??
+        null;
+
+      /*
+       * Ask the existing directory loader to refresh. If the deleted
+       * employee is already gone, the returned list naturally removes it.
+       */
+      window.dispatchEvent(
+        new CustomEvent("hrhub:employee-directory-refresh", {
+          detail: { employeeId },
+        })
+      );
+    };
+
+    window.addEventListener("hrhub:employee_deleted", handleDeleted);
+
+    if (typeof BroadcastChannel !== "undefined") {
+      channel = new BroadcastChannel("hrhub-employees");
+      channel.addEventListener("message", (event) => {
+        if (event.data?.type === "employee_deleted") {
+          handleDeleted(
+            new CustomEvent("hrhub:employee_deleted", {
+              detail: event.data,
+            })
+          );
+        }
+      });
+    }
+
+    /*
+     * Five-second fallback.
+     * This is deliberately slow enough to avoid hammering the API while
+     * still making the directory behave as realtime when push is down.
+     */
+    const interval = window.setInterval(refreshEmployees, 5000);
+return () => {
+      cancelled = true;
+      window.removeEventListener("hrhub:employee_deleted", handleDeleted);
+      window.clearInterval(interval);
+      channel?.close();
+    };
+  }, []);
+
+
   const router = useRouter();
   const { query, setQuery } = usePageSearch();
   const [employees, setEmployees] = useState<EmployeePublic[]>([]);
@@ -26,16 +154,26 @@ export default function EmployeesPage() {
 
   const loadEmployees = async () => {
     setLoading(true);
-    try { setEmployees(await employeeService.list()); }
+    try { setEmployees(await employeeService.list(0, 1000, true)); }
     catch (error) { console.error("Failed to load employees:", error); }
     finally { setLoading(false); }
   };
   useEffect(() => { loadEmployees(); }, []);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.type === "manager_assigned" || detail?.type === "team_updated" || detail?.type === "role_changed") {
+        loadEmployees();
+      }
+    };
+    window.addEventListener("hrhub:realtime", handler);
+    return () => window.removeEventListener("hrhub:realtime", handler);
+  }, []);
 
   const departments = useMemo(() => Array.from(new Set(employees.map(e => e.department).filter(Boolean))) as string[], [employees]);
   const statuses = useMemo(() => Array.from(new Set(employees.map(e => e.status))) as string[], [employees]);
   const filtered = useMemo(() => employees.filter(e => {
-    const haystack = [e.full_name, e.department, e.designation, e.status].filter(Boolean).join(" ").toLowerCase();
+    const haystack = [e.full_name, e.employee_id, e.department, e.designation, e.status].filter(Boolean).join(" ").toLowerCase();
     return (!query || haystack.includes(query.toLowerCase())) && (department === "all" || e.department === department) && (status === "all" || e.status === status);
   }), [employees, query, department, status]);
   const active = employees.filter(e => e.status === "active").length;
@@ -56,7 +194,13 @@ export default function EmployeesPage() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
             <Search size={17} className="text-gray-400" />
-            
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by name, department, designation, or status..."
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder:text-gray-400 outline-none"
+            />
             {query && <button onClick={() => setQuery("")}><X size={15} className="text-gray-400" /></button>}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -76,7 +220,41 @@ export default function EmployeesPage() {
       <Card className="overflow-hidden p-0">
         {loading ? <Loader label="Loading employees..." /> : <>
           <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4"><div><p className="text-sm font-semibold text-gray-900">Employee directory</p><p className="text-xs text-gray-400">{filtered.length} people match the current filters</p></div>{selected.length > 0 && <span className="rounded-lg bg-brand/10 px-3 py-1.5 text-xs font-medium text-brand">{selected.length} selected</span>}</div>
-          <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-surface-muted text-left text-xs text-gray-500"><tr><th className="px-5 py-3"><input type="checkbox" checked={filtered.length > 0 && selected.length === filtered.length} onChange={e => setSelected(e.target.checked ? filtered.map(x=>x.id) : [])}/></th><th className="px-5 py-3">Employee</th><th className="px-5 py-3">Department</th><th className="px-5 py-3">Designation</th><th className="px-5 py-3">Status</th></tr></thead><tbody className="divide-y divide-gray-100">{filtered.map(emp => <tr key={emp.id} onClick={() => router.push(`/employees/${emp.id}`)} className="cursor-pointer hover:bg-gray-50"><td className="px-5 py-3" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={selected.includes(emp.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,emp.id]:v.filter(id=>id!==emp.id))}/></td><td className="px-5 py-3"><p className="font-medium text-gray-900">{emp.full_name}</p><p className="text-xs text-gray-400">Employee profile</p></td><td className="px-5 py-3 text-gray-600">{emp.department ?? "—"}</td><td className="px-5 py-3 text-gray-600">{emp.designation ?? "—"}</td><td className="px-5 py-3"><span className={`rounded-full px-2.5 py-1 text-[11px] font-medium capitalize ${emp.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}>{emp.status.replace(/_/g," ")}</span></td></tr>)}{filtered.length===0 && <tr><td colSpan={5} className="px-5 py-12 text-center text-gray-400">No employees match your filters.</td></tr>}</tbody></table></div>
+          <div className="overflow-x-auto"><table className="w-full text-sm"><thead className="bg-surface-muted text-left text-xs text-gray-500"><tr><th className="px-5 py-3"><input type="checkbox" checked={filtered.length > 0 && selected.length === filtered.length} onChange={e => setSelected(e.target.checked ? filtered.map(x=>x.id) : [])}/></th><th className="px-5 py-3">Emp #</th><th className="px-5 py-3">Employee</th><th className="px-5 py-3">Official Email</th><th className="px-5 py-3">Department</th><th className="px-5 py-3">Designation</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Actions</th></tr></thead><tbody className="divide-y divide-gray-100">{filtered.map(emp => <tr key={emp.id} onClick={() => router.push(`/employees/${emp.id}`)} className="cursor-pointer hover:bg-gray-50"><td className="px-5 py-3" onClick={e=>e.stopPropagation()}><input type="checkbox" checked={selected.includes(emp.id)} onChange={e=>setSelected(v=>e.target.checked?[...v,emp.id]:v.filter(id=>id!==emp.id))}/></td><td className="px-5 py-3 text-gray-500 font-mono text-xs">{emp.employee_id ?? "—"}</td><td className="px-5 py-3"><p className="font-medium text-gray-900">{emp.full_name}</p><p className="text-xs text-gray-400">Employee profile</p></td><td className="px-5 py-3 text-gray-600 text-xs">{(emp as any).official_email ?? "—"}</td><td className="px-5 py-3 text-gray-600">{emp.department ?? "—"}</td><td className="px-5 py-3 text-gray-600">{emp.designation ?? "—"}</td><td className="px-5 py-3"><span className={`rounded-full px-2.5 py-1 text-[11px] font-medium capitalize ${emp.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"}`}>{emp.status.replace(/_/g," ")}</span>{emp.offboard_reason && <span className="ml-2 text-[11px] text-gray-400 capitalize">({emp.offboard_reason.replace(/_/g," ")})</span>}</td><td className="px-5 py-3" onClick={e=>e.stopPropagation()}>
+  <div className="flex items-center gap-2">
+    <select
+      defaultValue=""
+      onChange={async (e) => {
+        const managerId = e.target.value;
+        if (!managerId) return;
+          if (emp.status !== "active") {
+            alert("Can add only active employees.");
+            e.target.value = "";
+            return;
+          }
+        await employeeService.update(emp.id, { reporting_manager_id: managerId } as any);
+        e.target.value = "";
+        loadEmployees();
+      }}
+      className="rounded-lg border border-gray-200 px-2 py-1 text-xs"
+    >
+      <option value="">Assign manager…</option>
+      {employees.filter(m => m.id !== emp.id && m.status === "active").map(m => (
+        <option key={m.id} value={m.id}>{m.full_name}</option>
+      ))}
+    </select>
+    <button
+      onClick={async () => {
+        if (!confirm(`Promote ${emp.full_name} to Reporting Manager?`)) return;
+        await employeeService.update(emp.id, { role: "reporting_manager" } as any);
+        loadEmployees();
+      }}
+      className="rounded-lg border border-gray-200 px-2 py-1 text-xs text-brand hover:bg-brand/5"
+    >
+      Promote
+    </button>
+  </div>
+</td></tr>)}{filtered.length===0 && <tr><td colSpan={8} className="px-5 py-12 text-center text-gray-400">No employees match your filters.</td></tr>}</tbody></table></div>
         </>}
       </Card>
     </div>

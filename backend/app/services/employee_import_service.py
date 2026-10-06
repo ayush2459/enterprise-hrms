@@ -29,17 +29,33 @@ from app.utils.password_generator import generate_temp_password
 # target field -> acceptable header strings (already lowercased/stripped)
 HEADER_ALIASES: dict[str, list[str]] = {
     "employee_number": ["employee number", "employee no", "employee no.", "emp no", "emp id"],
-    "full_name": ["employee name", "name", "full name"],
+    "full_name": ["employee name", "name", "full name", "display name"],
     "department": ["department", "dept"],
-    "designation": ["designation", "title"],
+    "designation": ["designation", "title", "job title"],
     "employment_type": ["employeement type", "employment type", "type"],
     "gender": ["gender"],
     "date_of_birth": ["date of birth", "dob", "birth date"],
-    "date_of_joining": ["joined on", "joining date", "date of joining"],
-    "offboarded_at": ["leaving date", "relieving date", "date of leaving"],
-    "official_email": ["official email id", "official email", "email"],
+    "date_of_joining": ["joined on", "joining date", "date of joining", "date joined"],
+    "offboarded_at": ["leaving date", "relieving date", "date of leaving", "exit date", "date exited"],
+    "official_email": [
+        "official email id",
+        "official email",
+        "email",
+        "work email",
+        "work email id",
+        "company email",
+        "company email id",
+    ],
     "personal_email": ["personal email id", "personal email"],
-    "mobile_number": ["mobile number", "mobile no", "mobile no.", "phone", "contact number"],
+    "mobile_number": [
+        "mobile number",
+        "mobile no",
+        "mobile no.",
+        "mobile phone",
+        "phone",
+        "contact number",
+        "contact phone",
+    ],
     "personal_address": ["personal address", "address", "home address", "residential address"],
     "blood_group": ["blood group", "blood type"],
     "emergency_contact": ["emergency contact", "emergency number", "emergency phone"],
@@ -48,8 +64,14 @@ HEADER_ALIASES: dict[str, list[str]] = {
     "bank_ifsc": ["ifsc", "ifsc code", "bank ifsc"],
     "bank_name": ["bank name", "bank"],
     "pf_number": ["pf number", "pf details", "pf no", "pf no."],
-    "status_raw": ["status (employee/relieved)", "status", "status(employee/ relieved)"],
-    "reporting_manager_name": ["reporting manager", "manager"],
+    "status_raw": [
+        "status (employee/relieved)",
+        "status",
+        "status(employee/ relieved)",
+        "status (employee/ relieved)",
+        "employment status",
+    ],
+    "reporting_manager_name": ["reporting manager", "manager", "reporting to", "reports to"],
 }
 
 EMPLOYMENT_TYPE_MAP = {
@@ -127,6 +149,17 @@ class EmployeeImportService:
                 if normalized in aliases and field not in column_map:
                     column_map[field] = idx
 
+        # Fallback: some exports use a wordier/status column header we don't
+        # have an exact alias for (e.g. extra whitespace variants). If we
+        # still haven't found a status column, accept any header that
+        # contains "status" — this is the field most likely to have
+        # unpredictable formatting since it's often a free-text column.
+        if "status_raw" not in column_map:
+            for idx, header in enumerate(header_row):
+                if header is not None and "status" in _normalize_header(header):
+                    column_map["status_raw"] = idx
+                    break
+
         if "official_email" not in column_map and "employee_number" not in column_map:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -179,7 +212,13 @@ class EmployeeImportService:
                     fields["personal_address"] = v
 
                 if (v := _cell_to_str(get(row, "blood_group"))) is not None:
-                    fields["blood_group"] = v
+                    # The employees.blood_group column is VARCHAR(5).
+                    # Normalize descriptive Excel values such as
+                    # "O+ (O Positive)" to the compact blood-group value "O+".
+                    blood_group = v.strip()
+                    if "(" in blood_group:
+                        blood_group = blood_group.split("(", 1)[0].strip()
+                    fields["blood_group"] = blood_group[:5]
 
                 if (v := _cell_to_str(get(row, "emergency_contact"))) is not None:
                     fields["emergency_contact"] = v
@@ -216,7 +255,7 @@ class EmployeeImportService:
                 if "relieved" in status_raw or "resign" in status_raw or "terminat" in status_raw or leaving_date:
                     fields["status"] = "offboarded"
                     fields["offboard_reason"] = (
-                        OffboardReason.TERMINATED if "terminat" in status_raw else OffboardReason.RESIGNED
+                        OffboardReason.TERMINATION if "terminat" in status_raw else OffboardReason.RESIGNATION
                     )
                     fields["offboarded_at"] = leaving_date or date.today()
 
@@ -263,7 +302,7 @@ class EmployeeImportService:
                         skipped += 1
                         continue
 
-                    temp_password = generate_temp_password()
+                    temp_password = "Test@1234"
                     user = User(
                         official_email=official_email,
                         employee_id=employee_number,

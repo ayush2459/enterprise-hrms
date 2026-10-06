@@ -28,20 +28,22 @@ router = APIRouter(prefix="/employees", tags=["employees"])
 @router.get("", response_model=list[EmployeeReadPublic])
 async def list_employees(
     skip: int = 0,
-    limit: int = 50,
+    limit: int = 1000,
+    include_offboarded: bool = False,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Directory view — every authenticated role can see the public
-    fields. Only currently active employees show up here; anyone marked
-    resigned/terminated is excluded (see /separated for that list)."""
-    return await EmployeeService(db).list_directory(skip, limit)
+    fields. By default only active employees are returned; pass
+    include_offboarded=true to also get resigned/terminated employees
+    in the same list (still sorted by Employee Number ascending)."""
+    return await EmployeeService(db).list_directory(skip, limit, include_separated=include_offboarded)
 
 
 @router.get("/offboarded", response_model=list[SeparatedEmployee])
 async def list_offboarded_employees(
     skip: int = 0,
-    limit: int = 50,
+    limit: int = 1000,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -77,6 +79,26 @@ async def create_employee(
     return result
 
 
+@router.get("/me", response_model=EmployeeReadFull)
+async def get_my_employee_profile(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Self-service: resolve the logged-in user's own employee record.
+    Used by the frontend to default self-service pages (Leaves, Profile)
+    to "me" instead of asking every employee to pick themselves out of
+    the full company directory."""
+    employee = await EmployeeRepository(db).get_by_user_id(current_user.id)
+    if employee is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No employee profile is linked to this account yet. Contact HR.",
+        )
+    result = await EmployeeService(db).get_visible_profile(employee, current_user)
+    await db.commit()
+    return result
+
+
 @router.get("/{employee_id}", response_model=EmployeeReadFull | EmployeeReadPublic)
 async def get_employee(
     employee_id: UUID,
@@ -105,6 +127,32 @@ async def update_employee(
     updated = await EmployeeService(db).update_employee(employee, payload, current_user)
     await db.commit()
     return updated
+
+
+@router.post(
+    "/{employee_id}/password/reset-test",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[
+        Depends(
+            require_roles(
+                RoleEnum.HR_ADMIN,
+                RoleEnum.HR_EXECUTIVE,
+                RoleEnum.SYSTEM_ADMIN,
+            )
+        )
+    ],
+)
+async def reset_employee_password_to_test_default(
+    employee_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    employee = await EmployeeRepository(db).get_by_id(employee_id)
+    if employee is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+    await EmployeeService(db).reset_password_to_test_default(employee, current_user)
+    await db.commit()
+    return None
 
 
 @router.post("/{employee_id}/conversion/request", response_model=EmployeeReadFull | EmployeeReadPublic)
@@ -185,3 +233,39 @@ async def reactivate_employee(
     updated = await EmployeeService(db).reactivate_employee(employee, current_user)
     await db.commit()
     return EmployeeReadFull.model_validate(updated)
+
+
+@router.delete(
+    "/{employee_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[
+        Depends(
+            require_roles(
+                RoleEnum.HR_ADMIN,
+                RoleEnum.HR_EXECUTIVE,
+                RoleEnum.SYSTEM_ADMIN,
+            )
+        )
+    ],
+)
+async def delete_employee_permanently(
+    employee_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete an employee and their login account.
+
+    HR-only destructive operation. This is not an offboarding action.
+    The employee and all employee-owned database records are removed.
+    """
+    employee = await EmployeeRepository(db).get_by_id(employee_id)
+
+    if employee is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee not found",
+        )
+
+    await EmployeeService(db).delete_employee(employee, current_user)
+    await db.commit()
+    return None

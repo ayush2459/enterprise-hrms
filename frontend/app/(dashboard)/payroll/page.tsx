@@ -58,11 +58,26 @@ export default function PayrollPage() {
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
-    employeeService.list(0, 100).then((list) => {
-      setEmployees(list);
-      if (list.length > 0) setSelectedEmployeeId(list[0].id);
-    });
-  }, []);
+    if (!user) return;
+
+    if (isHR) {
+      employeeService.list(0, 100).then((list) => {
+        setEmployees(list);
+        if (list.length > 0) setSelectedEmployeeId(list[0].id);
+      });
+    } else {
+      // Employees and reporting managers can view only their own payroll.
+      // Load the signed-in user's profile instead of requesting the HR-only
+      // employee directory.
+      employeeService
+        .getMyProfile()
+        .then((profile) => {
+          setEmployees([profile]);
+          setSelectedEmployeeId(profile.id);
+        })
+        .catch(() => setError("Could not load your employee profile."));
+    }
+  }, [user, isHR]);
 
   const loadRecords = (employeeId: string) => {
     setLoading(true);
@@ -96,22 +111,34 @@ export default function PayrollPage() {
 
   return (
     <>
-      <Topbar title="Payroll" subtitle="Monthly payslips" />
+      <Topbar
+        title={isHR ? "Payroll" : "My Pay & Salary"}
+        subtitle={isHR ? "Monthly payslips" : "Your monthly salary and payslips"}
+      />
       <div className="p-8 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-500">Employee</label>
-            <select
-              value={selectedEmployeeId}
-              onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
-            >
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.full_name}
-                </option>
-              ))}
-            </select>
+          <div>
+            <p className="text-sm text-gray-500">
+              {isHR ? "Employee" : "Your payroll"}
+            </p>
+            {!isHR && employees[0] && (
+              <p className="mt-1 text-lg font-semibold text-brand-dark">
+                {employees[0].full_name}
+              </p>
+            )}
+            {isHR && (
+              <select
+                value={selectedEmployeeId}
+                onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                className="mt-1 rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+              >
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.full_name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           {isHR && selectedEmployeeId && (
             <Button onClick={() => setShowAddModal(true)} className="flex items-center gap-2">
@@ -122,6 +149,35 @@ export default function PayrollPage() {
         </div>
 
         {error && <p className="text-sm text-red-500">{error}</p>}
+
+        {!isHR && !loading && records.length > 0 && (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card className="p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                Latest Basic Pay
+              </p>
+              <p className="mt-2 text-2xl font-bold text-brand-dark">
+                ₹{records[0].basic_pay.toLocaleString()}
+              </p>
+            </Card>
+            <Card className="p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                Latest Allowances
+              </p>
+              <p className="mt-2 text-2xl font-bold text-brand-dark">
+                ₹{records[0].allowances.toLocaleString()}
+              </p>
+            </Card>
+            <Card className="p-5">
+              <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                Latest Net Salary
+              </p>
+              <p className="mt-2 text-2xl font-bold text-brand-dark">
+                ₹{records[0].net_pay.toLocaleString()}
+              </p>
+            </Card>
+          </div>
+        )}
 
         {loading ? (
           <Loader label="Loading payroll..." />

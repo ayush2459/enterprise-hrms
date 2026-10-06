@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import Cookies from "js-cookie";
 import type { User } from "@/types";
 
 interface AuthState {
@@ -17,16 +16,21 @@ export const useAuthStore = create<AuthState>((set) => ({
   setUser: (user) => set({ user, isAuthenticated: !!user }),
 
   setTokens: (accessToken, refreshToken) => {
-    // httpOnly cookies would be set server-side in a hardened deployment;
-    // for the MVP scaffold these are readable client-side JS cookies with
-    // a short access-token lifetime (Section 7: 15 min).
-    Cookies.set("access_token", accessToken, { expires: 1 / 96, sameSite: "strict" });
-    Cookies.set("refresh_token", refreshToken, { expires: 7, sameSite: "strict" });
+    // sessionStorage instead of cookies: it's scoped per-tab, not shared
+    // across the whole browser, so HR/Manager/Employee can each be logged
+    // in simultaneously in different tabs of the same browser. A cookie
+    // (or localStorage) would overwrite the same session in every tab.
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("access_token", accessToken);
+      sessionStorage.setItem("refresh_token", refreshToken);
+    }
   },
 
   logout: () => {
-    Cookies.remove("access_token");
-    Cookies.remove("refresh_token");
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("access_token");
+      sessionStorage.removeItem("refresh_token");
+    }
     set({ user: null, isAuthenticated: false });
   },
 }));

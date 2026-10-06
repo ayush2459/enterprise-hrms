@@ -18,6 +18,8 @@ HR_DOCUMENT_TYPES = (
     "appraisal_letter",
     "relieving_letter",
     "experience_letter",
+    "expense_receipt",
+    "travel_document",
     "other",
 )
 
@@ -39,6 +41,8 @@ HRDocumentType = Literal[
     "appraisal_letter",
     "relieving_letter",
     "experience_letter",
+    "expense_receipt",
+    "travel_document",
     "other",
 ]
 

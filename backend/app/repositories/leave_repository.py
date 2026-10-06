@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.enums import LeaveRequestStatus
 from app.models.leave_request import LeaveRequest
 from app.models.leave_type import LeaveType
+from app.models.employee import Employee
+
 
 
 class LeaveTypeRepository:
@@ -31,6 +33,10 @@ class LeaveTypeRepository:
         await self.db.flush()
         await self.db.refresh(leave_type)
         return leave_type
+
+    async def delete(self, leave_type: LeaveType) -> None:
+        await self.db.delete(leave_type)
+        await self.db.flush()
 
 
 class LeaveRequestRepository:
@@ -76,6 +82,15 @@ class LeaveRequestRepository:
         )
         return result.scalar_one()
 
+    async def list_all_pending_with_employee(self) -> list[tuple["LeaveRequest", "Employee"]]:
+        result = await self.db.execute(
+            select(LeaveRequest, Employee)
+            .join(Employee, Employee.id == LeaveRequest.employee_id)
+            .where(LeaveRequest.status == LeaveRequestStatus.PENDING)
+            .order_by(LeaveRequest.created_at.asc())
+        )
+        return [(row[0], row[1]) for row in result.all()]
+
     async def count_active_today(self) -> int:
         today = date.today()
         result = await self.db.execute(
@@ -88,3 +103,16 @@ class LeaveRequestRepository:
             )
         )
         return result.scalar_one()
+
+
+    async def list_by_leave_type(
+        self,
+        leave_type_id: UUID,
+    ) -> list[LeaveRequest]:
+        result = await self.db.execute(
+            select(LeaveRequest).where(
+                LeaveRequest.leave_type_id == leave_type_id
+            )
+        )
+        return list(result.scalars().all())
+

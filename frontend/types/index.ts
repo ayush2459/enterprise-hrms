@@ -16,6 +16,8 @@ export interface User {
 
 export interface EmployeePublic {
   id: string;
+  employee_id: string | null;
+  role: string | null;
   full_name: string;
   gender: string | null;
   department: string | null;
@@ -25,6 +27,8 @@ export interface EmployeePublic {
   photo_url: string | null;
   status: "active" | "on_leave" | "offboarded";
   notice_period_days: number | null;
+  reporting_manager_id: string | null;
+  official_email: string;
   conversion_status: "not_applicable" | "pending" | "approved" | "rejected";
   offboard_reason:
     | "resignation"
@@ -60,6 +64,7 @@ export interface EmployeeCreateInput {
   employment_type: "full_time" | "intern" | "contract";
   date_of_joining?: string;
   notice_period_days?: number;
+  role?: "employee" | "reporting_manager" | "hr_executive" | "hr_admin" | "system_admin";
 }
 
 export interface EmployeeCreateResult {
@@ -373,6 +378,7 @@ export interface LeaveRequest {
   id: string;
   employee_id: string;
   leave_type_id: string;
+  leave_document_id?: string | null;
   start_date: string;
   end_date: string;
   reason: string | null;

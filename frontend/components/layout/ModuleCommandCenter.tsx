@@ -1,6 +1,6 @@
 "use client";
-
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePageSearch } from "@/components/layout/PageSearchContext";
 import {
   ArrowUpRight,
   BarChart3,
@@ -361,7 +361,9 @@ function Metric({ item }: { item: ModuleConfig["metrics"][number] }) {
 
 export function ModuleCommandCenter() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
+  const { query, setQuery } = usePageSearch();
 
   const key = Object.keys(CONFIG).find(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
@@ -380,19 +382,14 @@ export function ModuleCommandCenter() {
 
   /** Determine which tab is currently active based on pathname + search params */
   function isActiveView(view: ViewConfig, index: number): boolean {
-    if (typeof window === "undefined") return index === 0;
-    const sp = new URLSearchParams(window.location.search);
-    const currentView = sp.get("view");
+    const currentView = searchParams.get("view");
     if (view.href) {
-      try {
-        const u = new URL(view.href, window.location.origin);
-        const vParam = u.searchParams.get("view");
-        // Special case: full path navigation (no view param) — match exact pathname
-        if (!vParam) return pathname === u.pathname && !currentView;
-        return vParam === currentView;
-      } catch {
-        return false;
-      }
+      const [hrefPath, hrefQuery] = view.href.split("?");
+      const hrefParams = new URLSearchParams(hrefQuery ?? "");
+      const vParam = hrefParams.get("view");
+      // Special case: full path navigation (no view param) — match exact pathname
+      if (!vParam) return pathname === hrefPath && !currentView;
+      return vParam === currentView;
     }
     // First tab (no href) is active when no view param is set
     return !currentView && pathname === key;
@@ -446,9 +443,13 @@ export function ModuleCommandCenter() {
       <div className="mt-3 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm md:flex-row md:items-center">
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
           <Search size={14} className="text-slate-400" />
-          <span className="truncate text-[11px] text-slate-400">
-            Search within {config.title.replace(" command center", "").replace(" center", "").toLowerCase()}…
-          </span>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={`Search within ${config.title.replace(" command center", "").replace(" center", "").toLowerCase()}…`}
+            className="min-w-0 flex-1 truncate bg-transparent text-[12px] text-slate-700 placeholder:text-slate-400 outline-none"
+          />
           <kbd className="ml-auto hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] text-slate-400 md:block">
             ⌘ K
           </kbd>

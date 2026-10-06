@@ -11,7 +11,7 @@ import type {
 export const employeeService = {
   async list(
     skip = 0,
-    limit = 50,
+    limit = 1000,
     includeOffboarded = false
   ) {
     const { data } = await api.get<EmployeePublic[]>("/employees", {
@@ -25,7 +25,7 @@ export const employeeService = {
     return data;
   },
 
-  async listOffboarded(limit = 50) {
+  async listOffboarded(limit = 1000) {
     const { data } = await api.get<EmployeePublic[]>(
       "/employees/offboarded",
       {
@@ -53,6 +53,11 @@ export const employeeService = {
     return data;
   },
 
+  async getMyProfile() {
+    const { data } = await api.get<EmployeeFull>("/employees/me");
+    return data;
+  },
+
   async getById(id: string) {
     const { data } = await api.get<
       EmployeeFull | EmployeePublic
@@ -71,6 +76,10 @@ export const employeeService = {
     );
 
     return data;
+  },
+
+  async resetPasswordToTestDefault(id: string) {
+    await api.post(`/employees/${id}/password/reset-test`);
   },
 
   async requestConversion(id: string) {

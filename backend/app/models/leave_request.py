@@ -19,6 +19,14 @@ class LeaveRequest(Base, UUIDPkMixin, TimestampMixin):
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date] = mapped_column(Date, nullable=False)
     reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # Supporting document uploaded specifically for this leave request.
+    leave_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     status: Mapped[LeaveRequestStatus] = mapped_column(
         Enum(LeaveRequestStatus, name="leave_request_status_enum"), default=LeaveRequestStatus.PENDING
     )

@@ -21,6 +21,8 @@ services:
 
   redis:
     image: redis:7-alpine
+    ports:
+      - "6379:6379"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -64,7 +66,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "3000:3000"
+      - "3006:3000"
     networks:
       - hrms_network
 

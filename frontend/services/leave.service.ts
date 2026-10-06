@@ -53,6 +53,15 @@ export const leaveService = {
     return data;
   },
 
+  async deleteType(leaveTypeId: string) {
+    await api.delete(`/leaves/types/${leaveTypeId}`);
+  },
+
+  async listAllPending() {
+    const { data } = await api.get("/leaves/pending");
+    return data;
+  },
+
   async listForEmployee(employeeId: string) {
     const { data } = await api.get<LeaveRequest[]>(
       `/leaves/employee/${employeeId}`
@@ -72,7 +81,8 @@ export const leaveService = {
     leaveTypeId: string,
     startDate: string,
     endDate: string,
-    reason: string
+    reason: string,
+    leaveDocumentId?: string
   ) {
     const { data } = await api.post<LeaveRequest>(
       `/leaves/employee/${employeeId}`,
@@ -81,6 +91,7 @@ export const leaveService = {
         start_date: startDate,
         end_date: endDate,
         reason,
+        leave_document_id: leaveDocumentId ?? null,
       }
     );
 

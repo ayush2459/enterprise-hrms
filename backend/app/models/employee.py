@@ -97,5 +97,25 @@ class Employee(Base, UUIDPkMixin, TimestampMixin):
         remote_side="Employee.id", foreign_keys=[reporting_manager_id]
     )
 
+    @property
+    def employee_id(self) -> str | None:
+        """The human-readable Employee Number (e.g. "001"), stored on the
+        linked User row. Requires `user` to be loaded — repository queries
+        eager-load it so this is always safe to read."""
+        return self.user.employee_id if self.user is not None else None
+
+    @property
+    def role(self) -> str | None:
+        """The account role (employee/reporting_manager/hr_*/system_admin),
+        stored on the linked User row. Used by HR to see and change who's
+        a manager directly from the employee directory."""
+        return self.user.role.value if self.user is not None else None
+
+    @property
+    def official_email(self) -> str | None:
+        """The login email, stored on the linked User row. Shown in the
+        HR directory table."""
+        return self.user.official_email if self.user is not None else None
+
     def __repr__(self) -> str:
         return f"<Employee {self.full_name}>"

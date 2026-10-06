@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -24,11 +25,15 @@ export function PageSearchProvider({
   children: React.ReactNode;
 }) {
   const [query, setQueryState] = useState("");
+  const [inputValue, setInputValue] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const read = () => {
       const params = new URLSearchParams(window.location.search);
-      setQueryState(params.get("q") || "");
+      const v = params.get("q") || "";
+      setQueryState(v);
+      setInputValue(v);
     };
 
     read();
@@ -42,34 +47,42 @@ export function PageSearchProvider({
     };
   }, []);
 
+  // Immediate: updates the input's displayed value (no lag while typing).
+  // Debounced: only after typing pauses (~300ms) do we touch the URL,
+  // dispatch the change event, and update `query` — this is what every
+  // page's search-driven effects key off of, so they only re-run once
+  // per pause instead of once per keystroke.
   const setQuery = (value: string) => {
-    setQueryState(value);
+    setInputValue(value);
 
-    const params = new URLSearchParams(window.location.search);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setQueryState(value);
 
-    if (value.trim()) {
-      params.set("q", value);
-    } else {
-      params.delete("q");
-    }
+      const params = new URLSearchParams(window.location.search);
+      if (value.trim()) {
+        params.set("q", value);
+      } else {
+        params.delete("q");
+      }
+      const queryString = params.toString();
 
-    const queryString = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        `${window.location.pathname}${queryString ? `?${queryString}` : ""}`
+      );
 
-    window.history.replaceState(
-      {},
-      "",
-      `${window.location.pathname}${queryString ? `?${queryString}` : ""}`
-    );
-
-    window.dispatchEvent(new Event("hrms:page-search-change"));
+      window.dispatchEvent(new Event("hrms:page-search-change"));
+    }, 300);
   };
 
   const value = useMemo(
     () => ({
-      query,
+      query: inputValue,
       setQuery,
     }),
-    [query]
+    [inputValue]
   );
 
   return (

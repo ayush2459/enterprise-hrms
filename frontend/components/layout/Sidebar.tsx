@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuthStore } from "@/store/auth.store";
 import {
   LayoutDashboard,
   Users,
@@ -20,9 +21,9 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
-} from "lucide-react";
+  Receipt,} from "lucide-react";
 
-const primary = [
+const primaryBase = [
   {
     label: "Dashboard",
     href: "/dashboard",
@@ -57,7 +58,7 @@ const people = [
     icon: CalendarDays,
   },
   {
-    label: "Payroll",
+label: "Payroll",
     href: "/payroll",
     icon: WalletCards,
   },
@@ -103,6 +104,23 @@ const manage = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuthStore();
+
+  const primary = [
+    {
+      label: "Expenses & Travel",
+      href:
+        user?.role === "reporting_manager"
+          ? "/manager-expense-travel"
+          : user?.role === "hr_admin" ||
+              user?.role === "hr_executive" ||
+              user?.role === "system_admin"
+            ? "/hr-expense-travel"
+            : "/expense-travel",
+      icon: Receipt,
+    },
+    ...primaryBase,
+  ];
 
   const renderItem = (
     item: {

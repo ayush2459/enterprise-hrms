@@ -1,146 +1,259 @@
-# HRHub — Enterprise HR Portal Dashboard
+# Enterprise HRMS — Premium Local V2
 
-A full-stack enterprise HRMS: Next.js frontend, FastAPI backend, PostgreSQL,
-Redis, and an nginx reverse proxy. HRHub brings the whole employee lifecycle
-— onboarding, documents, background verification, insurance, reporting
-lines, attendance, payroll, and performance — into one system of record
-instead of scattered spreadsheets.
+A premium local-only V2 upgrade of the existing **Enterprise HRMS** platform.
 
-![Login](docs/screenshots/login.png)
+> **Important:** This V2 is intended strictly for local development and testing. **GitHub, the existing production codebase, and production deployments remain untouched.**
 
-## Stack
+---
 
-| Layer       | Choice                                             |
-|-------------|-----------------------------------------------------|
-| Frontend    | Next.js 15 (App Router), TypeScript, Tailwind CSS   |
-| Backend     | FastAPI (Python), async SQLAlchemy 2.0              |
-| Database    | PostgreSQL 16                                        |
-| Cache/Store | Redis 7                                              |
-| Auth        | JWT (access + refresh), bcrypt, TOTP-based MFA       |
-| Proxy       | nginx                                                |
-| Deployment  | Docker Compose                                       |
+## 🚀 What's New in V2
 
-## Features
+Enterprise HRMS Premium Local V2 focuses on improving the local development experience and resolving the Next.js 15 production-build issue affecting workspace pages.
 
-- **Authentication & RBAC** — official email/employee ID login, bcrypt
-  password hashing, JWT access + refresh tokens, server-side role
-  re-validation on every request, account lockout after repeated failed
-  attempts, and TOTP-based MFA for HR/System Admin roles
-- **Employee master profile** — full CRUD with field-level visibility rules,
-  so sensitive fields are only visible to HR Admin/Executive or the
-  employee themselves
-- **Recruitment & onboarding** — pipeline tracking from requisition through
-  new-hire onboarding
-- **Documents & background checks** — upload, verification status, and BGV
-  tracking per employee
-- **Insurance & policies** — plan enrollment and a company policy library
-  with acknowledgment tracking
-- **Teams** — a live reporting-line org chart (skip-level manager → direct
-  manager → you → your direct reports) plus a team roster panel and a
-  documents/BGV completion summary for your team
-- **Attendance, leaves, payroll, performance** — the operational modules HR
-  and managers use day to day
-- **Full audit log** of login attempts and sensitive-field access
+### ✅ Next.js 15 Build Fix
 
-## Screenshots
+V2 resolves the Next.js 15 build failure caused by `useSearchParams()` being used outside a React `Suspense` boundary.
 
-**Dashboard**
-![Dashboard](docs/screenshots/dashboard.png)
+The affected areas include:
 
-**Employee Directory**
-![Employees](docs/screenshots/employees.png)
+* Manager Workspace
+* Employee Workspace
+* `WorkspaceShell`
+* Other workspace components relying on URL search parameters
 
-**Teams — Reporting Line & Roster**
-![Teams](docs/screenshots/teams.png)
+The affected components have been structured to use the appropriate `Suspense` boundaries, allowing the application to successfully complete the production build.
 
-**Documents**
-![Documents](docs/screenshots/documents.png)
+### ✨ Premium Local Experience
 
-**Payroll**
-![Payroll](docs/screenshots/payroll.png)
+The V2 environment is designed to provide a clean, stable local version of the existing HRMS without modifying the deployed application.
 
-**Performance**
-![Performance](docs/screenshots/performance.png)
+You can safely experiment with:
 
-## Quick Start
+* UI improvements
+* Workspace enhancements
+* Dashboard refinements
+* Employee-management features
+* Manager workflows
+* HR/Admin workflows
+* Frontend architecture changes
+* New local features and experiments
 
-**Prerequisites:** Docker & Docker Compose.
+All changes remain local unless explicitly committed and pushed.
 
-```bash
-git clone https://github.com/ayush2459/enterprise-hrms.git
-cd enterprise-hrms
-./scripts/setup.sh
-```
+---
 
-This copies `backend/.env.example` to `backend/.env`, builds every
-container, runs Alembic migrations, and starts the stack.
+## 🛡️ Production Safety
 
-Then create the first System Admin:
+This version is **LOCAL ONLY**.
 
-```bash
-docker compose exec backend python scripts/create_admin.py \
-  --email admin@yourcompany.com --password "ChangeMe123!"
-```
+### Production
 
-- Frontend: http://localhost:3000
-- Backend API docs: http://localhost:8000/docs
-- Through nginx: http://localhost
+* ❌ No production deployment changes
+* ❌ No production backend changes
+* ❌ No production database changes
+* ❌ No changes to the deployed frontend
+* ❌ No changes to Render/Vercel configuration
+* ❌ No changes to existing production environment variables
 
-**⚠️ Before any non-local deployment:** change `SECRET_KEY` and
-`POSTGRES_PASSWORD` in `backend/.env` — the example values are placeholders,
-not defaults you should ship with.
+### GitHub
 
-## Local development (without Docker)
+* ❌ No automatic GitHub changes
+* ❌ No requirement to push V2 changes
+* ✅ Existing repository remains untouched unless you explicitly commit/push changes
 
-**Backend**
-```bash
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env   # edit DATABASE_URL to point at a local Postgres
-alembic upgrade head
-uvicorn app.main:app --reload
-```
+### Local Environment
 
-**Frontend**
+* ✅ Safe for experimentation
+* ✅ Safe for UI changes
+* ✅ Safe for testing new features
+* ✅ Safe for build validation
+* ✅ Safe for local debugging
+
+---
+
+# 🧑‍💻 Getting Started
+
+## 1. Navigate to the Frontend
+
+From the Enterprise HRMS project root:
+
 ```bash
 cd frontend
+```
+
+---
+
+## 2. Install Dependencies
+
+```bash
 npm install
+```
+
+---
+
+## 3. Run Type Checking
+
+Verify that the frontend contains no TypeScript errors:
+
+```bash
+npm run type-check
+```
+
+Expected result:
+
+```text
+No TypeScript errors
+```
+
+---
+
+## 4. Create a Production Build
+
+Run the production build locally:
+
+```bash
+npm run build
+```
+
+This validates that the Next.js application can successfully compile and generate the production build.
+
+The V2 build specifically addresses the previous `useSearchParams()` / `Suspense` issue.
+
+---
+
+## 5. Start the Local Development Server
+
+```bash
 npm run dev
 ```
 
-## Project Structure
+The frontend will be available at:
 
+**http://localhost:3007**
+
+---
+
+# 📋 Recommended Development Flow
+
+For the most reliable workflow, run:
+
+```bash
+cd frontend
+npm install
+npm run type-check
+npm run build
+npm run dev
 ```
-enterprise-hrms/
-├── frontend/     # Next.js app (App Router, TS, Tailwind)
-├── backend/      # FastAPI app (async SQLAlchemy, Alembic, JWT auth)
-├── database/     # init.sql — extensions only; schema is Alembic-owned
-├── docker/       # nginx reverse proxy config, postgres overrides
-├── docs/         # specification documents + screenshots
-├── scripts/      # setup + admin bootstrap scripts
-└── docker-compose.yml
+
+Then open:
+
+```text
+http://localhost:3007
 ```
 
-## What's implemented
+---
 
-- Official email / Employee ID login, bcrypt password hashing
-- JWT access (15 min) + refresh (7 day) tokens, role claim embedded
-- Server-side RBAC re-validated on every request (not just at login)
-- Account lockout after 5 failed attempts, MFA (TOTP) for HR/System Admin
-- Full audit log of login attempts and sensitive-field access
-- Employee master profile: CRUD with field-level visibility rules
-  (sensitive fields only visible to HR Admin/Executive or the employee)
-- Reporting-line org chart with skip-level manager, roster panel, and team
-  status summary
-- Dashboard shell, sidebar navigation, employee directory table
+# 🔧 Available Commands
 
-## What's next
+| Command              | Purpose                             |
+| -------------------- | ----------------------------------- |
+| `npm install`        | Install frontend dependencies       |
+| `npm run type-check` | Run TypeScript validation           |
+| `npm run build`      | Create a production build           |
+| `npm run dev`        | Start the local development server  |
+| `npm run start`      | Start the built Next.js application |
 
-Documents/BGV pipeline hardening, insurance module expansion, HR policies
-library, reporting, and a hardening pass (field-level encryption, DPDP
-compliance review, load testing).
+---
 
-## License
+# 🏗️ V2 Architecture Notes
 
-See [LICENSE](./LICENSE).
+V2 continues to use the existing Enterprise HRMS frontend architecture while addressing compatibility with **Next.js 15**.
+
+A key change is the correct handling of components that depend on:
+
+```tsx
+useSearchParams()
+```
+
+These components must be rendered within an appropriate:
+
+```tsx
+<Suspense>
+  ...
+</Suspense>
+```
+
+boundary so that Next.js can correctly handle client-side URL state during the build and rendering process.
+
+This is particularly important for:
+
+* Workspace navigation
+* Search/filter parameters
+* Employee workspace state
+* Manager workspace state
+* URL-driven UI state
+
+---
+
+# 🧪 Local Testing Checklist
+
+Before considering a V2 change complete:
+
+* [ ] `npm install` completes successfully
+* [ ] `npm run type-check` passes
+* [ ] `npm run build` passes
+* [ ] Local server starts successfully
+* [ ] Login works
+* [ ] Dashboard loads
+* [ ] Employee workspace loads
+* [ ] Manager workspace loads
+* [ ] Workspace navigation works
+* [ ] Search/filter URL parameters work
+* [ ] No unexpected console errors
+* [ ] No production configuration is modified
+
+---
+
+# ⚠️ Important Development Rule
+
+**Do not deploy this V2 directly to production.**
+
+This branch/version exists to provide a safe local environment for development and experimentation.
+
+If a V2 change is eventually considered production-ready, it should first be:
+
+1. Tested locally
+2. Type-checked
+3. Production-built
+4. Functionally tested
+5. Reviewed
+6. Explicitly approved for integration
+
+Only then should changes be considered for the main production codebase.
+
+---
+
+# 📌 Current Status
+
+**Enterprise HRMS Premium Local V2**
+
+| Area                            | Status             |
+| ------------------------------- | ------------------ |
+| Local development               | ✅                  |
+| Next.js 15 compatibility        | ✅                  |
+| `useSearchParams()` build issue | ✅ Fixed            |
+| Suspense boundaries             | ✅ Updated          |
+| Type checking                   | ✅ Supported        |
+| Production build                | ✅ Supported        |
+| Local server                    | ✅ `localhost:3007` |
+| GitHub production               | 🔒 Untouched       |
+| Production deployment           | 🔒 Untouched       |
+| Production database             | 🔒 Untouched       |
+
+---
+
+## 🎯 Goal
+
+The goal of Premium Local V2 is to provide a **stable, modern, and safe development environment** for continuing Enterprise HRMS development without risking the currently deployed production system.
+
+**Local first. Test thoroughly. Deploy only when explicitly approved.**
